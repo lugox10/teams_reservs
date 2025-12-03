@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ReservationTeamLink {
+public class ReservationTeamLink extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,5 +29,5 @@ public class ReservationTeamLink {
 
     private String teamName; // nombre del equipo asociado (si aplica)
 
-    private LocalDateTime createdAt;
+
 }

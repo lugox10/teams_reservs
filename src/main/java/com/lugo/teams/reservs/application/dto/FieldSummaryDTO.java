@@ -14,5 +14,5 @@ public class FieldSummaryDTO {
     private String venueName;
     private Integer capacityPlayers;
     private BigDecimal pricePerHour;
-    private String firstPhoto; // url o null
+    private String firstPhoto;
 }

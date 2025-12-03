@@ -1,12 +1,17 @@
 package com.lugo.teams.reservs.application.dto.schedule;
 
-import lombok.Data;
+import lombok.*;
+
+import java.time.LocalTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ScheduleResponseDTO {
     private Long id;
     private Long venueId;
-    private String horaInicio;
-    private String horaFin;
+    private LocalTime horaInicio;
+    private LocalTime horaFin;
     private Double precio;
 }

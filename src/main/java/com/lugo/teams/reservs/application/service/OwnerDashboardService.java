@@ -1,0 +1,29 @@
+package com.lugo.teams.reservs.application.service;
+
+import com.lugo.teams.reservs.application.dto.ReservationResponseDTO;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Consultas y métricas que necesita el dueño (dashboard).
+ */
+public interface OwnerDashboardService {
+
+    /**
+     * Lista reservas de un owner por rango de fechas (todas sus sedes).
+     */
+    List<ReservationResponseDTO> findReservationsByOwner(Long ownerId, LocalDate from, LocalDate to);
+
+    /**
+     * Resumen de ingresos por sede en un mes.
+     * key = venueId, value = total cobrado
+     */
+    Map<Long, Double> getMonthlyRevenueByVenue(Long ownerId, int year, int month);
+
+    /**
+     * Métricas rápidas: reservas totales, ocupación promedio, ingresos.
+     */
+    Map<String, Object> getOwnerOverviewMetrics(Long ownerId, LocalDate from, LocalDate to);
+}

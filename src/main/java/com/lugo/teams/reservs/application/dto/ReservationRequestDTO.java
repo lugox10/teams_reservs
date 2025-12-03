@@ -19,7 +19,7 @@ public class ReservationRequestDTO {
     @NotNull
     private Long fieldId;
 
-    // O bien timeSlotId o start/end explícitos
+    // Preferir timeSlotId; permitir start/end para reservas custom
     private Long timeSlotId;
 
     private LocalDateTime startDateTime;
@@ -33,8 +33,7 @@ public class ReservationRequestDTO {
     private String notes;
 
     /**
-     * Si true, intentaremos (opcional) crear un match en Teams-FC después de pago confirmado.
-     * Este comportamiento depende de integración (Feign client) y permisos del owner.
+     * Si true, se solicitará crear (opcional) match en Teams-FC tras pago confirmado.
      */
     private boolean createTeamsMatch = false;
 }

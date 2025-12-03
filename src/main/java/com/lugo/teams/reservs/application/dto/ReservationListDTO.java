@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.dto;
 
-
+import com.lugo.teams.reservs.domain.model.ReservationStatus;
 import lombok.*;
 
 import java.math.BigDecimal;

@@ -1,23 +1,24 @@
-package com.lugo.teams.reservs.application.dto;
+    package com.lugo.teams.reservs.application.dto;
 
-import com.lugo.teamsreservs.reservs.domain.model.PaymentStatus;
-import jakarta.validation.constraints.NotNull;
-import lombok.*;
+    import com.lugo.teams.reservs.domain.model.PaymentStatus;
 
-import java.math.BigDecimal;
+    import jakarta.validation.constraints.NotNull;
+    import lombok.*;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PaymentCallbackDTO {
-    @NotNull
-    private Long reservationId;
+    import java.math.BigDecimal;
 
-    @NotNull
-    private PaymentStatus paymentStatus;
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public class PaymentCallbackDTO {
+        @NotNull
+        private Long reservationId;
 
-    private String paymentReference;
+        @NotNull
+        private PaymentStatus paymentStatus;
 
-    private BigDecimal amount;
-}
+        private String paymentReference;
+
+        private BigDecimal amount;
+    }

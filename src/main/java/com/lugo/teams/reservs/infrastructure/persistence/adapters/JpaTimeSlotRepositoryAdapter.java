@@ -3,13 +3,16 @@ package com.lugo.teams.reservs.infrastructure.persistence.adapters;
 import com.lugo.teams.reservs.domain.model.TimeSlot;
 import com.lugo.teams.reservs.domain.repository.TimeSlotRepository;
 import com.lugo.teams.reservs.infrastructure.persistence.jpa.DataTimeSlotRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Component
+
+@Repository
 public class JpaTimeSlotRepositoryAdapter implements TimeSlotRepository {
 
     private final DataTimeSlotRepository repo;
