@@ -1,37 +1,67 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 <head>
-    <meta charset="UTF-8" />
-    <title>Owner Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Dashboard dueño - Resumen</title>
+    <!-- Aquí luego puedes meter Bootstrap o tu CSS -->
 </head>
 <body>
-<h1>Dashboard del propietario</h1>
-<p>Bienvenido, <span th:text="${ownerName}">Propietario</span></p>
 
-<h2>Reservas próximas</h2>
-<table>
-    <thead>
-    <tr>
-        <th>ID</th><th>Fecha</th><th>Campo</th><th>User/Guest</th><th>Duración (min)</th><th>Estado</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="r : ${reservations}">
-        <td th:text="${r.id}">1</td>
-        <td th:text="${#dates.format(r.startTime,'dd/MM/yyyy HH:mm')}">fecha</td>
-        <td th:text="${r.fieldName}">campo</td>
-        <td>
-            <span th:if="${r.reservUser != null}" th:text="${r.reservUser.username}">usuario</span>
-            <span th:if="${r.reservUser == null}" th:text="${r.guestName}">guest</span>
-        </td>
-        <td th:text="${r.durationMinutes}">60</td>
-        <td th:text="${r.status}">CONFIRMED</td>
-    </tr>
-    </tbody>
-</table>
+<h1>Dashboard del dueño</h1>
 
-<div>
-    <a th:href="@{/owner/settings}">Ajustes</a>
-</div>
+<section>
+    <h2>Filtros</h2>
+    <form th:action="@{/dashboard/owner}" method="get">
+        <input type="hidden" name="ownerId" th:value="${ownerId}"/>
+
+        <label>Desde:
+            <input type="date" name="from" th:value="${from}"/>
+        </label>
+
+        <label>Hasta:
+            <input type="date" name="to" th:value="${to}"/>
+        </label>
+
+        <button type="submit">Aplicar</button>
+    </form>
+</section>
+
+<hr/>
+
+<section>
+    <h2>Métricas generales</h2>
+
+    <div>
+        <p><strong>Total reservas:</strong>
+            <span th:text="${metrics['totalReservations']}">0</span>
+        </p>
+        <p><strong>Total ingresos:</strong>
+            $ <span th:text="${metrics['totalRevenue']}">0.0</span>
+        </p>
+        <p><strong>Ocupación aproximada:</strong>
+            <span th:text="${#numbers.formatDecimal(metrics['occupancyRate'] * 100, 1, 2)}">0.0</span>%
+        </p>
+    </div>
+</section>
+
+<hr/>
+
+<section>
+    <h2>Acciones rápidas</h2>
+    <ul>
+        <li>
+            <a th:href="@{/dashboard/owner/reservations(ownerId=${ownerId}, from=${from}, to=${to})}">
+                Ver reservas en el rango
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/dashboard/owner/revenue(ownerId=${ownerId})}">
+                Ver ingresos por sede (mes actual)
+            </a>
+        </li>
+    </ul>
+</section>
+
 </body>
 </html>

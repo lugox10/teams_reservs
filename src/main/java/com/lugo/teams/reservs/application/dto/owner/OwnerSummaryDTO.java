@@ -8,5 +8,5 @@ import lombok.*;
 @Builder
 public class OwnerSummaryDTO {
     private Long id;
-    private String nombre;
+    private String name;
 }

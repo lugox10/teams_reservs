@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Owner extends BaseEntity{
+public class Owner extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +23,19 @@ public class Owner extends BaseEntity{
     private String email;
     private String phone;
     private String address;
+
+    /**
+     * Si ya habías añadido password en Owner lo dejamos (opcional).
+     * Recomendado: la auth principal la maneja ReservUser; Owner.user referencia al ReservUser.
+     */
+    private String password;
+
+    /**
+     * Vinculo opcional al usuario de autenticación
+     */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private ReservUser user;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default

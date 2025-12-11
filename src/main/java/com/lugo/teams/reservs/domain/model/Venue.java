@@ -28,7 +28,7 @@ public class Venue extends BaseEntity {
     @CollectionTable(name = "venue_photos", joinColumns = @JoinColumn(name = "venue_id"))
     @Column(name = "photo_url")
     @Builder.Default
-    private List<String> photos = new ArrayList<>();
+    private List<String> photos = new ArrayList<>();//opcional field
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")

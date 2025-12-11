@@ -31,7 +31,7 @@ public class VenueMapper {
         if (v.getOwner() != null) {
             OwnerSummaryDTO o = new OwnerSummaryDTO();
             o.setId(v.getOwner().getId());
-            o.setNombre(v.getOwner().getName());
+            o.setName(v.getOwner().getName());
             dto.setOwner(o);
         }
         return dto;

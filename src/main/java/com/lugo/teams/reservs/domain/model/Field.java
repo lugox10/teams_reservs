@@ -39,7 +39,7 @@ public class Field extends BaseEntity{
     @CollectionTable(name = "field_photos", joinColumns = @JoinColumn(name = "field_id"))
     @Column(name = "photo_url")
     @Builder.Default
-    private List<String> photos = new ArrayList<>();
+    private List<String> photos = new ArrayList<>();//opcional field
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id")

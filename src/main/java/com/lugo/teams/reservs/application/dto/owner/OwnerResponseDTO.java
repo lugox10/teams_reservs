@@ -8,8 +8,10 @@ import lombok.*;
 @Builder
 public class OwnerResponseDTO {
     private Long id;
-    private String nombre;
-    private String telefono;
+    private String name;
     private String email;
+    private String phone;
     private String address;
+    private Long userId;
+    private String username;
 }

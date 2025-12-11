@@ -13,10 +13,10 @@ public class OwnerMapper {
         if (e == null) return null;
         return OwnerResponseDTO.builder()
                 .id(e.getId())
-                .nombre(e.getName())              // DTO usa 'nombre'
-                .telefono(e.getPhone())           // DTO usa 'telefono'
+                .name(e.getName())              // DTO usa 'nombre'
+                .phone(e.getPhone())           // DTO usa 'telefono'
                 .email(e.getEmail())
-                .address(e.getAddress())          // si tu Owner tiene address; si no, omitir
+                .address(e.getAddress())// si tu Owner tiene address; si no, omitir
                 .build();
     }
 
@@ -24,25 +24,26 @@ public class OwnerMapper {
         if (e == null) return null;
         OwnerSummaryDTO s = new OwnerSummaryDTO();
         s.setId(e.getId());
-        s.setNombre(e.getName());
+        s.setName(e.getName());
         return s;
     }
 
     public Owner toEntity(OwnerRequestDTO req) {
         if (req == null) return null;
         Owner o = new Owner();
-        o.setName(req.getNombre());
+        o.setName(req.getName());
         o.setEmail(req.getEmail());
-        o.setPhone(req.getTelefono());     // OwnerRequestDTO tiene 'telefono' en tu snapshot
-        o.setAddress(req.getAddress());    // si existe en DTO
+        o.setPhone(req.getPhone());     // OwnerRequestDTO tiene 'telefono' en tu snapshot
+        o.setAddress(req.getAddress());
+        o.getPassword();// si existe en DTO
         return o;
     }
 
     public void updateEntityFromRequest(Owner target, OwnerRequestDTO req) {
         if (target == null || req == null) return;
-        if (req.getNombre() != null) target.setName(req.getNombre());
+        if (req.getName() != null) target.setName(req.getName());
         if (req.getEmail() != null) target.setEmail(req.getEmail());
-        if (req.getTelefono() != null) target.setPhone(req.getTelefono());
+        if (req.getPhone() != null) target.setPhone(req.getPhone());
         if (req.getAddress() != null) target.setAddress(req.getAddress());
     }
 }

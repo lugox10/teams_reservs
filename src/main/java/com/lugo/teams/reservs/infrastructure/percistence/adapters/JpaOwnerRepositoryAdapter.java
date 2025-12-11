@@ -30,4 +30,14 @@ public class JpaOwnerRepositoryAdapter implements OwnerRepository {
     public Optional<Owner> findByEmail(String email) {
         return repo.findByEmail(email);
     }
+
+    @Override
+    public Optional<Owner> findByUserId(Long userId) {
+        return repo.findByUserId(userId);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return repo.existsByEmail(email);
+    }
 }
