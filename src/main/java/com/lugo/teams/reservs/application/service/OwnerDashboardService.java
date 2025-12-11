@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.service;
 
-import com.lugo.teams.reservs.application.dto.ReservationResponseDTO;
+import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
 
 import java.time.LocalDate;
 import java.util.List;

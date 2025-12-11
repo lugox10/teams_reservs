@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.service;
 
-import com.lugo.teams.reservs.application.dto.TimeSlotDTO;
+import com.lugo.teams.reservs.application.dto.slot.TimeSlotDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;

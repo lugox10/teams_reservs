@@ -1,7 +1,7 @@
 package com.lugo.teams.reservs.application.mapper;
 
-import com.lugo.teams.reservs.application.dto.FieldDTO;
-import com.lugo.teams.reservs.application.dto.FieldSummaryDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.model.Venue;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class FieldMapper {
                 .surface(entity.getSurface())
                 .capacityPlayers(entity.getCapacityPlayers())
                 .pricePerHour(entity.getPricePerHour())
-                .active(entity.isActive())
+                .active(entity.isActive()) // autobox a Boolean
                 .photos(entity.getPhotos() != null ? entity.getPhotos() : Collections.emptyList())
                 .build();
     }
@@ -59,7 +59,8 @@ public class FieldMapper {
         f.setSurface(dto.getSurface());
         f.setCapacityPlayers(dto.getCapacityPlayers());
         f.setPricePerHour(dto.getPricePerHour());
-        f.setActive(dto.isActive());
+        // default: si no viene active, lo considero true al crear
+        f.setActive(dto.getActive() != null ? dto.getActive() : true);
         f.setPhotos(dto.getPhotos() != null ? dto.getPhotos() : Collections.emptyList());
         return f;
     }

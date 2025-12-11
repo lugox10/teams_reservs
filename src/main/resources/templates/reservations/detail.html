@@ -1,0 +1,48 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Detalle reserva</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body class="p-4">
+<div class="container">
+    <h1>Reserva <span th:text="${reservation.id}">1</span></h1>
+
+
+    <dl class="row">
+        <dt class="col-sm-3">Usuario</dt>
+        <dd class="col-sm-9" th:text="${reservation.userName}">user</dd>
+
+        <dt class="col-sm-3">Campo</dt>
+        <dd class="col-sm-9" th:text="${reservation.fieldName}">Cancha A</dd>
+
+        <dt class="col-sm-3">Inicio</dt>
+        <dd class="col-sm-9" th:text="${#temporals.format(reservation.startDateTime,'yyyy-MM-dd HH:mm')}">...</dd>
+
+        <dt class="col-sm-3">Fin</dt>
+        <dd class="col-sm-9" th:text="${#temporals.format(reservation.endDateTime,'yyyy-MM-dd HH:mm')}">...</dd>
+
+        <dt class="col-sm-3">Estado</dt>
+        <dd class="col-sm-9" th:text="${reservation.status}">PENDING</dd>
+
+        <dt class="col-sm-3">Pago</dt>
+        <dd class="col-sm-9" th:text="${reservation.paymentStatus}">NOT_INITIATED</dd>
+
+        <dt class="col-sm-3">Total</dt>
+        <dd class="col-sm-9" th:text="${reservation.totalAmount}">0.00</dd>
+    </dl>
+
+    <div class="mb-3">
+        <form th:action="@{|/reservations/${reservation.id}/initiate-payment|}" method="post" style="display:inline">
+            <button class="btn btn-success">Iniciar pago</button>
+        </form>
+
+        <form th:action="@{|/reservations/${reservation.id}/cancel|}" method="post" style="display:inline">
+            <button class="btn btn-danger">Cancelar reserva</button>
+        </form>
+
+        <a th:href="@{/reservations}" class="btn btn-secondary">Volver</a>
+    </div>
+</div>
+</body>
+</html>

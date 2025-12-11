@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Ingresos por sede</title>
+</head>
+<body>
+
+<h1>Ingresos por sede</h1>
+
+<section>
+    <form th:action="@{/dashboard/owner/revenue}" method="get">
+        <input type="hidden" name="ownerId" th:value="${ownerId}"/>
+
+        <label>Año:
+            <input type="number" name="year" th:value="${year}" min="2000" max="2100"/>
+        </label>
+
+        <label>Mes:
+            <input type="number" name="month" th:value="${month}" min="1" max="12"/>
+        </label>
+
+        <button type="submit">Filtrar</button>
+    </form>
+</section>
+
+<hr/>
+
+<section>
+    <h2>Resumen</h2>
+
+    <table border="1" cellspacing="0" cellpadding="4">
+        <thead>
+        <tr>
+            <th>ID Sede</th>
+            <th>Ingresos</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#maps.isEmpty(revenueByVenue)}">
+            <td colspan="2">No hay ingresos registrados para este período.</td>
+        </tr>
+        <tr th:each="entry : ${revenueByVenue}">
+            <td th:text="${entry.key}">1</td>
+            <td th:text="${entry.value}">0.0</td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+<hr/>
+
+<section>
+    <a th:href="@{/dashboard/owner(ownerId=${ownerId})}">Volver al resumen</a>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${editingId != null ? 'Editar reserva' : 'Nueva reserva'}">Nueva reserva</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body class="p-4">
+<div class="container">
+    <h1 th:text="${editingId != null ? 'Editar reserva' : 'Nueva reserva'}">Nueva reserva</h1>
+
+
+    <form th:action="${editingId != null} ? @{/reservations/{id}(id=${editingId})} : @{/reservations}"
+          th:object="${reservation}"
+          method="post">
+
+        <!-- VENUE -->
+        <div class="mb-3">
+            <label>Venue</label>
+            <select id="venueSelect" name="venueId" class="form-select" onchange="onVenueChange()">
+                <option value="">-- seleccionar --</option>
+                <option th:each="v : ${venues}"
+                        th:value="${v.id}"
+                        th:text="${v.name}"
+                        th:selected="${reservation.venueId} != null and ${reservation.venueId} == ${v.id}">
+                    Venue 1
+                </option>
+            </select>
+        </div>
+
+        <!-- FIELD -->
+        <div class="mb-3">
+            <label>Campo</label>
+            <select id="fieldSelect" name="fieldId" class="form-select" onchange="onFieldChange()">
+                <option value="">-- seleccionar --</option>
+                <option th:each="f : ${fields}"
+                        th:value="${f.id}"
+                        th:text="${f.name}"
+                        th:selected="${reservation.fieldId} != null and ${reservation.fieldId} == ${f.id}">
+                    Cancha A
+                </option>
+            </select>
+        </div>
+
+        <!-- TIMESLOT (opcional) -->
+        <div class="mb-3">
+            <label>Time slot (opcional)</label>
+            <select id="timeslotSelect" name="timeSlotId" class="form-select">
+                <option value="">-- seleccionar --</option>
+                <option th:each="ts : ${timeSlots}"
+                        th:value="${ts.id}"
+                        th:selected="${reservation.timeSlotId} != null and ${reservation.timeSlotId} == ${ts.id}"
+                        th:text="${#temporals.format(ts.startDateTime,'yyyy-MM-dd HH:mm') + ' - ' + #temporals.format(ts.endDateTime,'HH:mm')}">
+                </option>
+            </select>
+            <small class="form-text text-muted">
+                Si eliges un time slot, se ignoran Start / End / Duración.
+            </small>
+        </div>
+
+        <!-- START -->
+        <div class="mb-3">
+            <label>Start</label>
+            <input type="datetime-local"
+                   name="startDateTime"
+                   class="form-control"
+                   th:value="${reservation.startDateTime != null} ? ${#temporals.format(reservation.startDateTime, 'yyyy-MM-dd''T''HH:mm')} : ''"/>
+        </div>
+
+        <!-- END (opcional si usas duración) -->
+        <div class="mb-3">
+            <label>End (opcional si usas duración)</label>
+            <input type="datetime-local"
+                   name="endDateTime"
+                   class="form-control"
+                   th:value="${reservation.endDateTime != null} ? ${#temporals.format(reservation.endDateTime, 'yyyy-MM-dd''T''HH:mm')} : ''"/>
+            <small class="form-text text-muted">
+                Si no hay time slot y no indicas duración, se usará este End. Máximo 60 minutos.
+            </small>
+        </div>
+
+        <!-- DURATION -->
+        <div class="mb-3">
+            <label>Duración (minutos, máx. 60)</label>
+            <input type="number"
+                   name="durationMinutes"
+                   class="form-control"
+                   min="1" max="60"
+                   th:value="${reservation.durationMinutes}"/>
+            <small class="form-text text-muted">
+                Sin time slot: se usa Start + Duración. Si hay End y Duración, tiene prioridad la duración.
+            </small>
+        </div>
+
+        <!-- PLAYERS -->
+        <div class="mb-3">
+            <label>Players count</label>
+            <input type="number"
+                   name="playersCount"
+                   class="form-control"
+                   min="1"
+                   th:value="${reservation.playersCount}"/>
+        </div>
+
+        <!-- TEAM -->
+        <div class="mb-3">
+            <label>Team name</label>
+            <input type="text"
+                   name="teamName"
+                   class="form-control"
+                   th:value="${reservation.teamName}"/>
+        </div>
+
+        <!-- NOTES -->
+        <div class="mb-3">
+            <label>Notes</label>
+            <textarea name="notes"
+                      class="form-control"
+                      rows="3"
+                      th:text="${reservation.notes}"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <button class="btn btn-primary" type="submit">Guardar</button>
+            <a href="/reservations" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    async function onVenueChange() {
+        const venueId = document.getElementById('venueSelect').value;
+        if (!venueId) return;
+        const res = await fetch('/reservations/api/fields?venueId=' + venueId);
+        const fields = await res.json();
+        const fieldSelect = document.getElementById('fieldSelect');
+        fieldSelect.innerHTML = '<option value="">-- seleccionar --</option>';
+        fields.forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.text = f.name;
+            fieldSelect.appendChild(opt);
+        });
+
+        // al cambiar de venue, limpiamos timeslots
+        const tsSelect = document.getElementById('timeslotSelect');
+        tsSelect.innerHTML = '<option value="">-- seleccionar --</option>';
+    }
+
+    async function onFieldChange() {
+        const fieldId = document.getElementById('fieldSelect').value;
+        if (!fieldId) return;
+        const res = await fetch('/reservations/api/timeslots?fieldId=' + fieldId);
+        const slots = await res.json();
+        const tsSelect = document.getElementById('timeslotSelect');
+        tsSelect.innerHTML = '<option value="">-- seleccionar --</option>';
+        slots.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.text = new Date(s.startDateTime).toLocaleString() + ' - ' + new Date(s.endDateTime).toLocaleTimeString();
+            tsSelect.appendChild(opt);
+        });
+    }
+</script>
+</body>
+</html>

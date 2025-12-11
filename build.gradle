@@ -21,6 +21,8 @@ dependencies {
 	implementation 'commons-io:commons-io:2.11.0'
 	implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-core:1.11.0' // o la versión que prefieras
 
 	testImplementation 'com.intuit.karate:karate-junit5:1.5.1'
 	testImplementation 'com.intuit.karate:karate-apache:1.5.1'

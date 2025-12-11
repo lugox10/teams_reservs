@@ -24,17 +24,35 @@ public class Reservation extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Integración simple con users: guardamos username; si integras con Player, podés añadir playerId
-    @Column(name = "user_name", nullable = false)
+    // --- Relación con usuario registrado (opcional) ---
+    // Ajusta el package/classname si tu entidad tiene otro nombre o package
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reserv_user_id")
+    private ReservUser reservUser;
+
+    // --- Información alternativa para guest (si no hay reservUser) ---
+    @Column(name = "guest_name")
+    private String guestName;
+
+    @Column(name = "guest_phone")
+    private String guestPhone;
+
+    @Column(name = "guest_email")
+    private String guestEmail;
+
+    // --- Legacy / compat: username string (opcional) ---
+    // Algunos flujos / DTOs usan userName. Lo mantenemos opcional.
+    @Column(name = "user_name")
     private String userName;
 
-    private Long userId; // opcional, si querés referencia interna al jugador
+    private Long userId; // si necesitas referencia numérica adicional (opcional)
 
+    // Campo reservado (campo físico)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "field_id", nullable = false)
     private Field field;
 
-    // TimeSlot es opcional: la reserva puede crearse con start/end explícitos
+    // Timeslot opcional
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_slot_id")
     private TimeSlot timeSlot;
@@ -44,6 +62,9 @@ public class Reservation extends BaseEntity {
 
     @Column(name = "end_date_time", nullable = false)
     private LocalDateTime endDateTime;
+
+    // duración en minutos (para form / validaciones). Máximo 60 en tu negocio.
+    private Integer durationMinutes;
 
     private Integer playersCount = 1;
 
@@ -58,7 +79,8 @@ public class Reservation extends BaseEntity {
     @Column(precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
-    private String paymentReference; // id del pago en el gateway
+    // referencia del pago (se usa en PaymentMapper / services)
+    private String paymentReference;
 
     private String notes;
 
@@ -70,4 +92,6 @@ public class Reservation extends BaseEntity {
     @Builder.Default
     private List<Payment> payments = new ArrayList<>();
 
+    // si tu BaseEntity ya tiene createdAt/updatedAt no declares de nuevo
+    // private LocalDateTime createdAt;
 }

@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.mapper;
 
-import com.lugo.teams.reservs.application.dto.ReservationTeamLinkDTO;
+import com.lugo.teams.reservs.application.dto.reserv.ReservationTeamLinkDTO;
 import com.lugo.teams.reservs.domain.model.ReservationTeamLink;
 import org.springframework.stereotype.Component;
 

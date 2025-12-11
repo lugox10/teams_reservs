@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.service;
 
-import com.lugo.teams.reservs.application.dto.PaymentCallbackDTO;
+import com.lugo.teams.reservs.application.dto.payment.PaymentCallbackDTO;
 
 
 import java.math.BigDecimal;

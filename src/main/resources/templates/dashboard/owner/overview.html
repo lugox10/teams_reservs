@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Owner Dashboard</title>
+</head>
+<body>
+<h1>Dashboard del propietario</h1>
+<p>Bienvenido, <span th:text="${ownerName}">Propietario</span></p>
+
+<h2>Reservas próximas</h2>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th><th>Fecha</th><th>Campo</th><th>User/Guest</th><th>Duración (min)</th><th>Estado</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="r : ${reservations}">
+        <td th:text="${r.id}">1</td>
+        <td th:text="${#dates.format(r.startTime,'dd/MM/yyyy HH:mm')}">fecha</td>
+        <td th:text="${r.fieldName}">campo</td>
+        <td>
+            <span th:if="${r.reservUser != null}" th:text="${r.reservUser.username}">usuario</span>
+            <span th:if="${r.reservUser == null}" th:text="${r.guestName}">guest</span>
+        </td>
+        <td th:text="${r.durationMinutes}">60</td>
+        <td th:text="${r.status}">CONFIRMED</td>
+    </tr>
+    </tbody>
+</table>
+
+<div>
+    <a th:href="@{/owner/settings}">Ajustes</a>
+</div>
+</body>
+</html>

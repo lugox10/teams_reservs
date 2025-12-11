@@ -1,14 +1,15 @@
 package com.lugo.teams.reservs.application.mapper;
 
-import com.lugo.teams.reservs.application.dto.ReservationRequestDTO;
-import com.lugo.teams.reservs.application.dto.ReservationResponseDTO;
-import com.lugo.teams.reservs.application.dto.ReservationTeamLinkDTO;
+import com.lugo.teams.reservs.application.dto.reserv.ReservationRequestDTO;
+import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
+import com.lugo.teams.reservs.application.dto.reserv.ReservationTeamLinkDTO;
 import com.lugo.teams.reservs.domain.model.Reservation;
 import com.lugo.teams.reservs.domain.model.ReservationTeamLink;
 import com.lugo.teams.reservs.domain.model.TimeSlot;
 import com.lugo.teams.reservs.domain.model.Field;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ public class ReservationMapper {
         r.setUserId(dto.getUserId());
         r.setField(field);
         r.setTimeSlot(timeSlot);
+        // start/end pueden ser sobreescritos por el servicio si lo calcula con duration
         r.setStartDateTime(dto.getStartDateTime() != null ? dto.getStartDateTime() :
                 (timeSlot != null ? timeSlot.getStartDateTime() : null));
         r.setEndDateTime(dto.getEndDateTime() != null ? dto.getEndDateTime() :
@@ -61,6 +63,14 @@ public class ReservationMapper {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt());
 
+        // calcular duración (minutos) si start/end están presentes
+        if (entity.getStartDateTime() != null && entity.getEndDateTime() != null) {
+            long mins = Duration.between(entity.getStartDateTime(), entity.getEndDateTime()).toMinutes();
+            b.durationMinutes((int) mins);
+        } else {
+            b.durationMinutes(null);
+        }
+
         // map links
         b.links(mapLinks(entity.getTeamLinks()));
         return b.build();
@@ -97,5 +107,6 @@ public class ReservationMapper {
         if (dto.getPlayersCount() != null) entity.setPlayersCount(dto.getPlayersCount());
         if (dto.getTeamName() != null) entity.setTeamName(dto.getTeamName());
         if (dto.getNotes() != null) entity.setNotes(dto.getNotes());
+        // NOTA: no guardamos duration en la entidad (se calcula desde start/end)
     }
 }

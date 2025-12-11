@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.service;
 
-import com.lugo.teams.reservs.application.dto.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDTO;
 
 import java.util.List;
 import java.util.Optional;

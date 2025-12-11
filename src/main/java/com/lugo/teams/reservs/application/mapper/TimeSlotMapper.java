@@ -1,6 +1,6 @@
 package com.lugo.teams.reservs.application.mapper;
 
-import com.lugo.teams.reservs.application.dto.TimeSlotDTO;
+import com.lugo.teams.reservs.application.dto.slot.TimeSlotDTO;
 import com.lugo.teams.reservs.domain.model.TimeSlot;
 import com.lugo.teams.reservs.domain.model.Field;
 import org.springframework.stereotype.Component;

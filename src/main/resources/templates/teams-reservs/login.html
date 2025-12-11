@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"/><title>Login - Teams Reservs</title></head>
+<body class="p-4">
+<div class="container">
+    <h1>Iniciar sesión</h1>
+
+
+
+
+    <form th:action="@{/teams-reservs/login}" method="post">
+        <label>Usuario / correo / identificación:
+            <input type="text" name="login" required />
+        </label>
+        <br/>
+        <label>Contraseña:
+            <input type="password" name="password" required />
+        </label>
+        <br/>
+        <button type="submit">Entrar</button>
+    </form>
+
+    <p>¿No tienes cuenta? <a th:href="@{/reserv-users/register}">Regístrate</a></p>
+</div>
+</body>
+</html>
