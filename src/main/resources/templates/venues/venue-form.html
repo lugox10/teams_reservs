@@ -1,0 +1,31 @@
+<!-- src/main/resources/templates/venues/venue-form.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"/></head>
+<body>
+<div th:replace="fragments/header :: mainHeader"></div>
+<main style="max-width:800px;margin:20px auto;padding:0 16px;">
+    <h1 th:text="${venue != null ? 'Editar venue' : 'Crear venue'}">Venue</h1>
+
+    <form th:action="${venue != null} ? @{/owner/venues/{id}(id=${venue.id})} : @{/owner/venues}" th:method="post" th:object="${venueRequest}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <div>
+            <label>Nombre</label>
+            <input type="text" th:field="*{name}" />
+        </div>
+        <div>
+            <label>Dirección</label>
+            <input type="text" th:field="*{address}" />
+        </div>
+        <div>
+            <label>Zona horaria</label>
+            <input type="text" th:field="*{timeZone}" placeholder="America/Bogota" />
+        </div>
+        <div style="margin-top:10px;">
+            <button type="submit" style="padding:8px 10px;background:#1976d2;color:#fff;border-radius:6px;">Guardar</button>
+        </div>
+    </form>
+</main>
+<div th:replace="fragments/footer :: mainFooter"></div>
+</body>
+</html>

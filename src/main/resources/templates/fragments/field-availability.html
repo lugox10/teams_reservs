@@ -1,6 +1,6 @@
 <!-- templates/fragments/field-availability.html -->
 <div th:fragment="availabilityFragment(fieldId, fieldName)"
-     th:attr="data-field-id=${fieldId}">
+     th:attr="data-field-id=${fieldId}" xmlns:th="http://www.w3.org/1999/xhtml">
     <h3 th:text="${fieldName} ?: 'Disponibilidad'">Disponibilidad</h3>
 
     <label for="avail-date">Selecciona fecha</label>

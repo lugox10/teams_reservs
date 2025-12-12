@@ -1,0 +1,22 @@
+<!— templates/fragments/header.html —>
+<header th:fragment="mainHeader" xmlns:th="http://www.w3.org/1999/xhtml">
+    <nav style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#0d47a1;color:#fff;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <a th:href="@{/}" style="color:#fff;text-decoration:none;font-weight:700;">Teams Reservs</a>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <a th:href="@{/venues}" style="color:#fff;text-decoration:none;">Complejos</a>
+            <a th:href="@{/reservations}" style="color:#fff;text-decoration:none;">Mis reservas</a>
+            <a th:href="@{/owner/dashboard}" style="color:#fff;text-decoration:none;">Área owner</a>
+            <span th:if="${#mvc.isUserAuthenticated() == false}">
+        <a th:href="@{/login}" style="color:#fff;text-decoration:none;margin-left:12px;">Ingresar</a>
+      </span>
+            <span th:if="${#mvc.isUserAuthenticated()}">
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <button type="submit" style="background:transparent;border:0;color:#fff;cursor:pointer;">Salir</button>
+        </form>
+      </span>
+        </div>
+    </nav>
+</header>
