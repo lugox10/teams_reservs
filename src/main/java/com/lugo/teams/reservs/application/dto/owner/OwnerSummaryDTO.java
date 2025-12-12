@@ -1,7 +1,9 @@
 package com.lugo.teams.reservs.application.dto.owner;
-
 import lombok.*;
 
+/**
+ * DTO ligero para listados.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

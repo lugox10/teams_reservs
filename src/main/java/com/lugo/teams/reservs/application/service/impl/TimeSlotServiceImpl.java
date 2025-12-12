@@ -1,6 +1,7 @@
 package com.lugo.teams.reservs.application.service.impl;
 
 import com.lugo.teams.reservs.application.dto.slot.TimeSlotDTO;
+
 import com.lugo.teams.reservs.application.mapper.TimeSlotMapper;
 import com.lugo.teams.reservs.application.service.TimeSlotService;
 import com.lugo.teams.reservs.domain.model.Field;
@@ -85,7 +86,11 @@ public class TimeSlotServiceImpl implements TimeSlotService {
         existing.setStartDateTime(dto.getStartDateTime());
         existing.setEndDateTime(dto.getEndDateTime());
         existing.setPriceOverride(dto.getPriceOverride());
-        existing.setAvailable(dto.isAvailable());
+
+        // <-- CORRECCIÓN: usar getAvailable() y no sobrescribir si viene null
+        if (dto.getAvailable() != null) {
+            existing.setAvailable(dto.getAvailable());
+        }
 
         TimeSlot saved = timeSlotRepository.save(existing);
         meterRegistry.counter("timeslot.updated").increment();
@@ -99,6 +104,7 @@ public class TimeSlotServiceImpl implements TimeSlotService {
 
         return mapper.toDTO(saved);
     }
+
 
     // ======================= FIND BY ID =======================
     @Override

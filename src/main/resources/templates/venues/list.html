@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Complejos deportivos</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+    <style>
+        /* estilos mínimos inline para que se vea decente sin depender de CSS externo */
+        .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); }
+        .card { border:1px solid #e3e3e3; border-radius:8px; padding:12px; background:#fff; display:flex; flex-direction:column; }
+        .card img { width:100%; height:150px; object-fit:cover; border-radius:6px; }
+        .meta { margin-top:8px; font-size:0.95rem; color:#555; }
+        .actions { margin-top:auto; display:flex; gap:8px; }
+        .btn { padding:8px 12px; border-radius:6px; text-decoration:none; background:#1976d2; color:#fff; }
+        .btn-ghost { background:transparent; color:#1976d2; border:1px solid #1976d2; }
+    </style>
+</head>
+<body>
+<main class="container" style="max-width:1100px;margin:24px auto;padding:0 12px;">
+    <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <h1>Complejos Deportivos</h1>
+        <a th:href="@{/}" class="btn-ghost">Inicio</a>
+    </header>
+
+    <section>
+        <div th:if="${venues == null or #lists.isEmpty(venues)}">
+            <p>No hay complejos disponibles.</p>
+        </div>
+
+        <div class="grid" th:if="${venues != null}">
+            <div class="card" th:each="v : ${venues}">
+                <img th:src="${v.mainPhotoUrl != null ? v.mainPhotoUrl : '/images/placeholder-venue.jpg'}" th:alt="${v.name}" />
+                <h3 th:text="${v.name}">Nombre del complejo</h3>
+                <div class="meta">
+                    <div th:text="${v.address}">Dirección</div>
+                    <div style="margin-top:6px;">
+                        <small th:text="'Canchas: ' + ${v.fieldsCount}">Canchas: 3</small>
+                        <span style="margin-left:8px;"><small th:text="${v.active ? 'Abierto' : 'Inactivo'}"></small></span>
+                    </div>
+                </div>
+                <div class="actions" style="margin-top:12px;">
+                    <a th:href="@{|/venues/${v.id}|}" class="btn">Ver complejo</a>
+                    <a th:href="@{|/venues/${v.id}#fields|}" class="btn-ghost">Ver canchas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

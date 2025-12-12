@@ -15,34 +15,37 @@ public interface DataReservationRepository extends JpaRepository<Reservation, Lo
 
     List<Reservation> findByFieldIdOrderByStartDateTime(Long fieldId);
 
-    @Query("select r from Reservation r " +
-            "where r.field.id = :fieldId " +
-            "and r.status <> 'CANCELLED' " +
-            "and not (r.endDateTime <= :start or r.startDateTime >= :end)")
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.field.id = :fieldId " +
+            "  AND r.startDateTime < :end " +
+            "  AND r.endDateTime > :start " +
+            "  AND r.status <> com.lugo.teams.reservs.domain.model.ReservationStatus.CANCELLED " +
+            "ORDER BY r.startDateTime")
     List<Reservation> findOverlappingReservations(@Param("fieldId") Long fieldId,
                                                   @Param("start") LocalDateTime start,
                                                   @Param("end") LocalDateTime end);
 
-    @Query("select count(r) from Reservation r " +
-            "where r.field.id = :fieldId " +
-            "and r.status <> 'CANCELLED' " +
-            "and not (r.endDateTime <= :start or r.startDateTime >= :end)")
+    @Query("SELECT COUNT(r) FROM Reservation r " +
+            "WHERE r.field.id = :fieldId " +
+            "  AND r.startDateTime < :end " +
+            "  AND r.endDateTime > :start " +
+            "  AND r.status <> com.lugo.teams.reservs.domain.model.ReservationStatus.CANCELLED")
     long countOverlappingReservations(@Param("fieldId") Long fieldId,
                                       @Param("start") LocalDateTime start,
                                       @Param("end") LocalDateTime end);
 
-    @Query("select r from Reservation r " +
-            "where r.userName = :userName " +
-            "and r.endDateTime >= :from " +
-            "order by r.startDateTime")
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.userName = :userName " +
+            "  AND r.endDateTime >= :from " +
+            "ORDER BY r.startDateTime")
     List<Reservation> findUpcomingByUser(@Param("userName") String userName,
                                          @Param("from") LocalDateTime from,
                                          Pageable pageable);
 
-    @Query("select r from Reservation r " +
-            "where r.field.venue.id = :venueId " +
-            "and r.startDateTime >= :from " +
-            "order by r.startDateTime")
+    @Query("SELECT r FROM Reservation r " +
+            "WHERE r.field.venue.id = :venueId " +
+            "  AND r.startDateTime >= :from " +
+            "ORDER BY r.startDateTime")
     List<Reservation> findByVenueUpcoming(@Param("venueId") Long venueId,
                                           @Param("from") LocalDateTime from);
 }

@@ -1,7 +1,8 @@
-package com.lugo.teams.reservs.application.mapper;
-
+ package com.lugo.teams.reservs.application.mapper;
 import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldRequestDTO;
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.model.Venue;
 import org.springframework.stereotype.Component;
@@ -14,9 +15,41 @@ import java.util.stream.Collectors;
 @Component
 public class FieldMapper {
 
+    public FieldDetailDTO toDetailDTO(Field entity) {
+        if (entity == null) return null;
+        FieldDetailDTO.FieldDetailDTOBuilder b = FieldDetailDTO.builder()
+                .id(entity.getId())
+                .venueId(entity.getVenue() != null ? entity.getVenue().getId() : null)
+                .venueName(entity.getVenue() != null ? entity.getVenue().getName() : null)
+                .name(entity.getName())
+                .fieldType(entity.getFieldType())
+                .surface(entity.getSurface())
+                .capacityPlayers(entity.getCapacityPlayers())
+                .pricePerHour(entity.getPricePerHour())
+                .slotMinutes(entity.getSlotMinutes())
+                .openHour(entity.getOpenHour())
+                .closeHour(entity.getCloseHour())
+                .minBookingHours(entity.getMinBookingHours())
+                .photos(entity.getPhotos() != null ? entity.getPhotos() : Collections.emptyList());
+
+        // derive paymentOptions from venue flags (guard nulls)
+        List<String> payOptions = Optional.ofNullable(entity.getVenue())
+                .map(v -> {
+                    List<String> p = new java.util.ArrayList<>();
+                    if (v.isAllowOnsitePayment()) p.add("ONSITE");
+                    if (v.isAllowBankTransfer()) p.add("BANK");
+                    if (v.isAllowOnlinePayment()) p.add("ONLINE");
+                    return p;
+                }).orElse(Collections.emptyList());
+
+        b.paymentOptions(payOptions);
+        return b.build();
+    }
+
+
     public FieldDTO toDTO(Field entity) {
         if (entity == null) return null;
-        return FieldDTO.builder()
+        FieldDTO dto = FieldDTO.builder()
                 .id(entity.getId())
                 .venueId(entity.getVenue() != null ? entity.getVenue().getId() : null)
                 .name(entity.getName())
@@ -26,7 +59,14 @@ public class FieldMapper {
                 .pricePerHour(entity.getPricePerHour())
                 .active(entity.isActive()) // autobox a Boolean
                 .photos(entity.getPhotos() != null ? entity.getPhotos() : Collections.emptyList())
+                // nuevos campos
+                .slotMinutes(entity.getSlotMinutes())
+                .openHour(entity.getOpenHour())
+                .closeHour(entity.getCloseHour())
+                .minBookingHours(entity.getMinBookingHours())
+                .timeSlotsCount(entity.getTimeSlots() != null ? entity.getTimeSlots().size() : 0)
                 .build();
+        return dto;
     }
 
     public FieldSummaryDTO toSummary(Field entity) {
@@ -41,6 +81,7 @@ public class FieldMapper {
                 .capacityPlayers(entity.getCapacityPlayers())
                 .pricePerHour(entity.getPricePerHour())
                 .firstPhoto(firstPhoto)
+                .slotMinutes(entity.getSlotMinutes())
                 .build();
     }
 
@@ -49,19 +90,51 @@ public class FieldMapper {
         return list.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    public Field toEntity(FieldDTO dto, Venue venue) {
-        if (dto == null) return null;
+    // ------------------ Helpers para Requests (create / update) ------------------
+
+    /**
+     * Convierte FieldRequestDTO a entidad nueva.
+     * NOTA: no setea timeSlots. La persistencia de relaciones la hace el servicio.
+     */
+    public Field toEntityFromRequest(FieldRequestDTO req, Venue venue) {
+        if (req == null) return null;
         Field f = new Field();
-        f.setId(dto.getId());
-        f.setName(dto.getName());
+        f.setName(req.getName());
         f.setVenue(venue);
-        f.setFieldType(dto.getFieldType());
-        f.setSurface(dto.getSurface());
-        f.setCapacityPlayers(dto.getCapacityPlayers());
-        f.setPricePerHour(dto.getPricePerHour());
-        // default: si no viene active, lo considero true al crear
-        f.setActive(dto.getActive() != null ? dto.getActive() : true);
-        f.setPhotos(dto.getPhotos() != null ? dto.getPhotos() : Collections.emptyList());
+        f.setFieldType(req.getFieldType());
+        f.setSurface(req.getSurface());
+        f.setCapacityPlayers(req.getCapacityPlayers());
+        f.setPricePerHour(req.getPricePerHour());
+        f.setActive(req.getActive() != null ? req.getActive() : true);
+        f.setPhotos(req.getPhotos() != null ? req.getPhotos() : Collections.emptyList());
+
+        f.setSlotMinutes(req.getSlotMinutes() != null ? req.getSlotMinutes() : 60);
+        f.setOpenHour(req.getOpenHour() != null ? req.getOpenHour() : 6);
+        f.setCloseHour(req.getCloseHour() != null ? req.getCloseHour() : 23);
+        f.setMinBookingHours(req.getMinBookingHours() != null ? req.getMinBookingHours() : 1);
+
         return f;
     }
+
+    /**
+     * Actualiza una entidad existente desde el request (parcial).
+     */
+    public void updateEntityFromRequest(Field target, FieldRequestDTO req, Venue venue) {
+        if (target == null || req == null) return;
+        if (req.getName() != null) target.setName(req.getName());
+        if (venue != null) target.setVenue(venue);
+        if (req.getFieldType() != null) target.setFieldType(req.getFieldType());
+        if (req.getSurface() != null) target.setSurface(req.getSurface());
+        if (req.getCapacityPlayers() != null) target.setCapacityPlayers(req.getCapacityPlayers());
+        if (req.getPricePerHour() != null) target.setPricePerHour(req.getPricePerHour());
+        if (req.getActive() != null) target.setActive(req.getActive());
+        if (req.getPhotos() != null) target.setPhotos(req.getPhotos());
+
+        if (req.getSlotMinutes() != null) target.setSlotMinutes(req.getSlotMinutes());
+        if (req.getOpenHour() != null) target.setOpenHour(req.getOpenHour());
+        if (req.getCloseHour() != null) target.setCloseHour(req.getCloseHour());
+        if (req.getMinBookingHours() != null) target.setMinBookingHours(req.getMinBookingHours());
+    }
+
+    // ------------------ Fin helpers ------------------
 }

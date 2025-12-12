@@ -1,24 +1,27 @@
-    package com.lugo.teams.reservs.application.dto.payment;
 
-    import com.lugo.teams.reservs.domain.model.PaymentStatus;
+package com.lugo.teams.reservs.application.dto.payment;
 
-    import jakarta.validation.constraints.NotNull;
-    import lombok.*;
+import com.lugo.teams.reservs.domain.model.PaymentStatus;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
-    import java.math.BigDecimal;
+import java.math.BigDecimal;
 
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public class PaymentCallbackDTO {
-        @NotNull
-        private Long reservationId;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PaymentCallbackDTO {
 
-        @NotNull
-        private PaymentStatus paymentStatus;
+    @NotNull(message = "reservationId es obligatorio")
+    private Long reservationId;
 
-        private String paymentReference;
+    @NotNull(message = "paymentStatus es obligatorio")
+    private PaymentStatus paymentStatus;
 
-        private BigDecimal amount;
-    }
+    private String paymentReference;
+
+    @DecimalMin(value = "0.0", inclusive = false, message = "amount debe ser mayor que 0")
+    private BigDecimal amount;
+}

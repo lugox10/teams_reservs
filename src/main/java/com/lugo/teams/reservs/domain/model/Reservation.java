@@ -11,7 +11,8 @@ import java.util.List;
 @Entity
 @Table(name = "reservations", indexes = {
         @Index(columnList = "field_id, time_slot_id"),
-        @Index(columnList = "user_name")
+        @Index(columnList = "user_name"),
+        @Index(columnList = "venue_id")
 })
 @Getter
 @Setter
@@ -24,13 +25,12 @@ public class Reservation extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- Relación con usuario registrado (opcional) ---
-    // Ajusta el package/classname si tu entidad tiene otro nombre o package
+    // Relación con usuario registrado (opcional)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reserv_user_id")
     private ReservUser reservUser;
 
-    // --- Información alternativa para guest (si no hay reservUser) ---
+    // Información alternativa para guest (si no hay reservUser)
     @Column(name = "guest_name")
     private String guestName;
 
@@ -40,19 +40,24 @@ public class Reservation extends BaseEntity {
     @Column(name = "guest_email")
     private String guestEmail;
 
-    // --- Legacy / compat: username string (opcional) ---
-    // Algunos flujos / DTOs usan userName. Lo mantenemos opcional.
+    // Legacy / compat: username string (opcional)
     @Column(name = "user_name")
     private String userName;
 
-    private Long userId; // si necesitas referencia numérica adicional (opcional)
+    /**
+     * Campo opcional denormalizado: venue asociado (mejora queries owner->reservations).
+     */
+    @Column(name = "venue_id")
+    private Long venueId;
+
+    private Long userId; // referencia numérica adicional (opcional)
 
     // Campo reservado (campo físico)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "field_id", nullable = false)
     private Field field;
 
-    // Timeslot opcional
+    // Timeslot opcional (si estás usando time_slots persistentes)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_slot_id")
     private TimeSlot timeSlot;
@@ -63,17 +68,20 @@ public class Reservation extends BaseEntity {
     @Column(name = "end_date_time", nullable = false)
     private LocalDateTime endDateTime;
 
-    // duración en minutos (para form / validaciones). Máximo 60 en tu negocio.
+    // duración en minutos (para form / validaciones). Máximo 60 por slot (o multiples)
     private Integer durationMinutes;
 
+    @Builder.Default
     private Integer playersCount = 1;
 
     private String teamName;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private ReservationStatus status = ReservationStatus.PENDING;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.NOT_INITIATED;
 
     @Column(precision = 10, scale = 2)
@@ -84,6 +92,12 @@ public class Reservation extends BaseEntity {
 
     private String notes;
 
+    /**
+     * Método de pago elegido por usuario: ONSITE | BANK | ONLINE
+     */
+    @Column(name = "payment_method", length = 20)
+    private String paymentMethod;
+
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ReservationTeamLink> teamLinks = new ArrayList<>();
@@ -91,7 +105,4 @@ public class Reservation extends BaseEntity {
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Payment> payments = new ArrayList<>();
-
-    // si tu BaseEntity ya tiene createdAt/updatedAt no declares de nuevo
-    // private LocalDateTime createdAt;
 }

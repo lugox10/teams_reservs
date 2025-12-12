@@ -12,4 +12,6 @@ public interface TimeSlotRepository {
     List<TimeSlot> findByFieldIdAndAvailableTrue(Long fieldId);
     List<TimeSlot> findAvailableByFieldBetween(Long fieldId, LocalDateTime from, LocalDateTime to);
     List<TimeSlot> findOverlappingSlots(Long fieldId, LocalDateTime start, LocalDateTime end);
+
+    List<TimeSlot> findByFieldIdAndStartDateTimeBetween(Long fieldId, LocalDateTime searchStart, LocalDateTime searchEnd);
 }

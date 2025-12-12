@@ -10,4 +10,7 @@ public interface FieldRepository {
     Optional<Field> findById(Long id);
     List<Field> findByVenueId(Long venueId);
     List<Field> findByActiveTrue();
+
+    // nuevo: devuelve entidad con detalles (coincide con DataFieldRepository.findWithDetailsById)
+    Optional<Field> findWithDetailsById(Long id);
 }

@@ -23,6 +23,9 @@ public class Owner extends BaseEntity {
     private String email;
     private String phone;
     private String address;
+    private String nit;
+    private String businessName;
+    private String logo;
 
     /**
      * Si ya habías añadido password en Owner lo dejamos (opcional).

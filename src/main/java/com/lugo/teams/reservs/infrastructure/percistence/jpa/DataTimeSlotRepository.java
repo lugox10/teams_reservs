@@ -28,4 +28,6 @@ public interface DataTimeSlotRepository extends JpaRepository<TimeSlot, Long> {
     List<TimeSlot> findOverlappingSlots(@Param("fieldId") Long fieldId,
                                         @Param("start") LocalDateTime start,
                                         @Param("end") LocalDateTime end);
+
+    List<TimeSlot> findByFieldIdAndStartDateTimeBetween(Long fieldId, LocalDateTime searchStart, LocalDateTime searchEnd);
 }

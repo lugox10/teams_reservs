@@ -142,6 +142,7 @@ public class ReservationController {
         ReservationResponseDTO resp = opt.get();
         ReservationRequestDTO req = new ReservationRequestDTO();
         req.setFieldId(resp.getFieldId());
+        req.setVenueId(resp.getVenueId()); // <-- agregado: preservar venueId para cargar fields dependientes
         req.setStartDateTime(resp.getStartDateTime());
         req.setEndDateTime(resp.getEndDateTime());
         req.setPlayersCount(resp.getPlayersCount());
@@ -157,6 +158,7 @@ public class ReservationController {
         model.addAttribute("editingId", id);
         return "reservations/form";
     }
+
 
     // CANCEL
     @PostMapping("/{id}/cancel")
@@ -201,7 +203,7 @@ public class ReservationController {
     // UPDATE handler
     @PostMapping("/{id}")
     public String update(@PathVariable Long id,
-                         @ModelAttribute("reservation") ReservationRequestDTO dto,
+                         @Valid @ModelAttribute("reservation") ReservationRequestDTO dto, // <-- @Valid agregado
                          BindingResult br,
                          RedirectAttributes ra,
                          Principal principal,

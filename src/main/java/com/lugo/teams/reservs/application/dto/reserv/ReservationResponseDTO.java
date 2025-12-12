@@ -1,5 +1,4 @@
 package com.lugo.teams.reservs.application.dto.reserv;
-
 import com.lugo.teams.reservs.domain.model.PaymentStatus;
 import com.lugo.teams.reservs.domain.model.ReservationStatus;
 import lombok.*;

@@ -1,5 +1,6 @@
 package com.lugo.teams.reservs.application.service;
 
+import com.lugo.teams.reservs.application.dto.venue.VenueListDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueRequestDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
 
@@ -17,7 +18,7 @@ public interface VenueService {
 
     Optional<VenueResponseDTO> findById(Long id);
 
-    List<VenueResponseDTO> findByOwnerId(Long ownerId);
+    List<VenueListDTO> findByOwnerId(Long ownerId);
 
     List<VenueResponseDTO> findActive();
 }

@@ -1,3 +1,4 @@
+// src/main/java/com/lugo/teams/reservs/application/dto/venue/VenueRequestDTO.java
 package com.lugo.teams.reservs.application.dto.venue;
 
 import jakarta.validation.constraints.NotBlank;
@@ -11,17 +12,20 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class VenueRequestDTO {
-    @NotNull
+    @NotNull(message = "ownerId es requerido")
     private Long ownerId;
 
-    @NotBlank
-    private String nombre;
+    @NotBlank(message = "name es requerido")
+    private String name;
 
-    private String direccion;
-
-    private String tipoDeporte; // p.ej. "Futbol"
+    private String address;
     private String timeZone;
-
-    public List<String> photos;
-
+    private String mainPhotoUrl;
+    private Double lat;
+    private Double lng;
+    private Boolean active;
+    private Boolean allowOnsitePayment;
+    private Boolean allowBankTransfer;
+    private Boolean allowOnlinePayment;
+    private List<String> photos;
 }

@@ -1,6 +1,7 @@
 package com.lugo.teams.reservs.application.service.impl;
 
 import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.application.mapper.FieldMapper;
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.model.Venue;
@@ -45,7 +46,8 @@ public class FieldServiceImpl implements FieldService {
 
         // si quisieras validar unicidad: existsByVenueIdAndName(...)
 
-        Field entity = mapper.toEntity(dto, venue);
+
+        Field entity = new Field();
         Field saved = fieldRepository.save(entity);
         meterRegistry.counter("field.created").increment();
         log.info("Field creado id={} venueId={} name={}", saved.getId(), venue.getId(), saved.getName());
@@ -106,4 +108,13 @@ public class FieldServiceImpl implements FieldService {
         var list = fieldRepository.findByActiveTrue();
         return list == null ? List.of() : list.stream().map(mapper::toDTO).collect(Collectors.toList());
     }
+
+@Override
+@Transactional(readOnly = true)
+public Optional<FieldDetailDTO> findDetailById(Long id) {
+    if (id == null) throw new BadRequestException("id es requerido");
+    return fieldRepository.findWithDetailsById(id).map(mapper::toDetailDTO);
+}
+
+
 }

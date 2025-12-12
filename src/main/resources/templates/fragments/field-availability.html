@@ -1,0 +1,176 @@
+<!-- templates/fragments/field-availability.html -->
+<div th:fragment="availabilityFragment(fieldId, fieldName)"
+     th:attr="data-field-id=${fieldId}">
+    <h3 th:text="${fieldName} ?: 'Disponibilidad'">Disponibilidad</h3>
+
+    <label for="avail-date">Selecciona fecha</label>
+    <input type="date" id="avail-date" name="date" />
+
+    <div id="slots-container" style="margin-top:1rem; display:flex; flex-direction:column; gap:8px;">
+        <!-- slots will be rendered here -->
+    </div>
+
+    <div id="slot-selection-info" style="margin-top:1rem;"></div>
+
+    <!-- CSRF token for fetch -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        (function(){
+          const container = document.querySelector('[data-field-id]');
+          if (!container) return;
+          const fieldId = container.getAttribute('data-field-id');
+          const dateInput = document.getElementById('avail-date');
+          const slotsContainer = document.getElementById('slots-container');
+          const info = document.getElementById('slot-selection-info');
+
+          const today = new Date().toISOString().slice(0,10);
+          dateInput.value = today;
+
+          let selectedSlots = [];
+
+          function getCsrfHeaders() {
+            const tokenMeta = document.querySelector('meta[name="_csrf"]');
+            const headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            if (tokenMeta && headerMeta) {
+              const token = tokenMeta.getAttribute('content');
+              const header = headerMeta.getAttribute('content');
+              const h = {};
+              h[header] = token;
+              return h;
+            }
+            return {};
+          }
+
+          function fetchAndRender(date) {
+            slotsContainer.innerHTML = '<div>Cargando disponibilidad…</div>';
+            fetch('/api/fields/' + fieldId + '/availability?date=' + date)
+              .then(r => { if (!r.ok) throw new Error('Error cargando disponibilidad'); return r.json(); })
+              .then(data => renderSlots(data))
+              .catch(err => {
+                slotsContainer.innerHTML = '<div style="color:#b00">No se pudo cargar disponibilidad</div>';
+                console.error(err);
+              });
+          }
+
+          function renderSlots(data) {
+            slotsContainer.innerHTML = '';
+            selectedSlots = [];
+            info.innerHTML = '';
+
+            if (!data || !data.slots || data.slots.length === 0) {
+              slotsContainer.innerHTML = '<div>No hay slots para esta fecha</div>';
+              return;
+            }
+
+            data.slots.forEach((slot) => {
+              const el = document.createElement('button');
+              el.type = 'button';
+              el.className = 'slot-btn';
+              el.style.padding = '8px 12px';
+              el.style.border = '1px solid #ddd';
+              el.style.borderRadius = '6px';
+              el.style.display = 'flex';
+              el.style.justifyContent = 'space-between';
+              el.style.alignItems = 'center';
+              el.style.cursor = 'pointer';
+              el.style.minWidth = '280px';
+              el.style.background = '#fff';
+
+              if (slot.status === 'AVAILABLE') el.style.background = '#e6ffed';
+              else if (slot.status === 'BOOKED') el.style.background = '#ffeded';
+              else if (slot.status === 'BLOCKED') el.style.background = '#f0f0f0';
+
+              if (slot.status !== 'AVAILABLE') el.disabled = true;
+
+              const left = document.createElement('div');
+              left.innerHTML = `<strong>${slot.slotLabel}</strong><div style="font-size:0.9em;color:#666">${slot.price ? slot.price + ' COP' : ''}</div>`;
+
+              const right = document.createElement('div');
+              right.style.fontSize = '0.9em';
+              right.style.color = '#333';
+              right.innerText = slot.status;
+
+              el.appendChild(left);
+              el.appendChild(right);
+
+              el.addEventListener('click', () => {
+                const iso = slot.startDateTime;
+                const idxSel = selectedSlots.indexOf(iso);
+                if (idxSel === -1) {
+                  if (selectedSlots.length > 0) {
+                    const last = selectedSlots[selectedSlots.length-1];
+                    const lastObj = data.slots.find(s => s.startDateTime === last);
+                    if (!lastObj) { selectedSlots = []; }
+                    else {
+                      if (slot.startDateTime !== lastObj.endDateTime) {
+                        alert('Solo puedes seleccionar slots contiguos. Selecciona las horas seguidas en orden.');
+                        return;
+                      }
+                    }
+                  }
+                  selectedSlots.push(iso);
+                  el.style.outline = '3px solid #2b8a3e';
+                } else {
+                  selectedSlots.splice(idxSel,1);
+                  el.style.outline = '';
+                }
+                updateInfo(data);
+              });
+
+              slotsContainer.appendChild(el);
+            });
+          }
+
+          function updateInfo(data) {
+            if (selectedSlots.length === 0) { info.innerHTML = ''; return; }
+            let total = 0;
+            let paySet = new Set();
+            selectedSlots.forEach(s => {
+              const slot = data.slots.find(x => x.startDateTime === s);
+              if (slot && slot.price) total += Number(slot.price);
+              if (slot && slot.paymentOptions) slot.paymentOptions.forEach(p => paySet.add(p));
+            });
+
+            const slotMinutes = data.slots.length>0 ? (function(){
+              const a=new Date(data.slots[0].startDateTime), b=new Date(data.slots[0].endDateTime);
+              return (b-a)/60000;
+            })() : 60;
+
+            info.innerHTML = `<div>Seleccionado ${selectedSlots.length} slot(s) — Total: <strong>${total} COP</strong></div>
+              <div>Opciones de pago: ${Array.from(paySet).join(', ')}</div>
+              <div style="margin-top:8px;"><button id="confirm-book" type="button">Confirmar reserva</button></div>`;
+
+            document.getElementById('confirm-book').addEventListener('click', () => {
+              const start = selectedSlots[0];
+              const durationMinutes = selectedSlots.length * slotMinutes;
+              const payload = {
+                fieldId: Number(fieldId),
+                startDateTime: start,
+                durationMinutes: durationMinutes
+              };
+
+              const headers = Object.assign({'Content-Type':'application/json'}, getCsrfHeaders());
+
+              fetch('/api/reservations', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+              }).then(r => {
+                if (r.ok) {
+                  alert('Reserva creada correctamente.');
+                  fetchAndRender(dateInput.value);
+                } else {
+                  r.text().then(t => alert('Error: ' + t));
+                }
+              }).catch(e => alert('Error creando reserva: ' + e.message));
+            });
+          }
+
+          fetchAndRender(dateInput.value);
+          dateInput.addEventListener('change', () => fetchAndRender(dateInput.value));
+        })();
+        /*]]>*/
+    </script>

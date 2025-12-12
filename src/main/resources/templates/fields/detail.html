@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title th:text="${fieldName} ?: 'Detalle de la cancha'">Cancha</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+    <style>
+        .container { max-width:900px; margin:20px auto; padding:0 12px; }
+        .top { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+        .thumb { width:320px; height:200px; object-fit:cover; border-radius:8px; }
+        .meta { flex:1; min-width:240px; }
+        .btn { padding:8px 10px; border-radius:6px; text-decoration:none; background:#1976d2; color:#fff; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <a th:href="@{|/venues/${venueId}|}" style="display:inline-block;margin-bottom:12px;">&larr; Volver al complejo</a>
+
+    <section class="top">
+        <img class="thumb" th:src="${field.photos != null && !#lists.isEmpty(field.photos) ? field.photos[0] : '/images/placeholder-field.jpg'}" alt="foto cancha"/>
+        <div class="meta">
+            <h1 th:text="${fieldName}">Cancha</h1>
+            <p><strong>Tipo:</strong> <span th:text="${fieldType}">Futbol 5</span></p>
+            <p><strong>Superficie:</strong> <span th:text="${surface}">Sintética</span></p>
+            <p><strong>Capacidad:</strong> <span th:text="${field.capacityPlayers}">8</span></p>
+            <p><strong>Precio/Hora:</strong> <span th:text="${pricePerHour}">25000</span> COP</p>
+            <p><strong>Horario:</strong> <span th:text="${openHour} + ':00 - ' + ${closeHour} + ':00'">06:00 - 23:00</span></p>
+            <div style="margin-top:8px;">
+                <a class="btn" th:href="@{|/venues/${venueId}|}">Ver complejo</a>
+            </div>
+        </div>
+    </section>
+
+    <hr style="margin:18px 0"/>
+
+    <!-- Aquí incluimos el fragment availability -->
+    <div th:replace="fragments/field-availability :: availabilityFragment(${fieldId}, ${fieldName})"></div>
+
+</main>
+</body>
+</html>

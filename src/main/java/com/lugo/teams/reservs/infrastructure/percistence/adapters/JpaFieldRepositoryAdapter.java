@@ -1,5 +1,7 @@
 package com.lugo.teams.reservs.infrastructure.percistence.adapters;
 
+import aj.org.objectweb.asm.commons.Remapper;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.repository.FieldRepository;
 import com.lugo.teams.reservs.infrastructure.percistence.jpa.DataFieldRepository;
@@ -36,4 +38,12 @@ public class JpaFieldRepositoryAdapter implements FieldRepository {
     public List<Field> findByActiveTrue() {
         return repo.findByActiveTrue();
     }
+
+
+
+    @Override
+    public Optional<Field> findWithDetailsById(Long id) {
+        return repo.findWithDetailsById(id);
+    }
+
 }

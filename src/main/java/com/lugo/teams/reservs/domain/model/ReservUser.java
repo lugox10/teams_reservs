@@ -7,7 +7,8 @@ import lombok.*;
 @Table(name = "reserv_users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "email"),
-                @UniqueConstraint(columnNames = "phone")
+                @UniqueConstraint(columnNames = "phone"),
+                @UniqueConstraint(columnNames = "username")
         })
 @Getter
 @Setter
@@ -33,8 +34,6 @@ public class ReservUser {
     @Column(unique = true, nullable = true)
     private String identification;
 
-
-
     private String phone;
 
     private String password;
@@ -42,7 +41,9 @@ public class ReservUser {
     @Enumerated(EnumType.STRING)
     private ReservUserRole role;
 
+    @Builder.Default
+    private boolean enabled = true;
 
-
-
+    @Builder.Default
+    private boolean locked = false;
 }

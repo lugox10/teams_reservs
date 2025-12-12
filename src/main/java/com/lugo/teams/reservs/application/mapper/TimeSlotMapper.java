@@ -1,5 +1,4 @@
 package com.lugo.teams.reservs.application.mapper;
-
 import com.lugo.teams.reservs.application.dto.slot.TimeSlotDTO;
 import com.lugo.teams.reservs.domain.model.TimeSlot;
 import com.lugo.teams.reservs.domain.model.Field;
@@ -20,7 +19,7 @@ public class TimeSlotMapper {
                 .startDateTime(ts.getStartDateTime())
                 .endDateTime(ts.getEndDateTime())
                 .priceOverride(ts.getPriceOverride())
-                .available(ts.isAvailable())
+                .available(Boolean.valueOf(ts.isAvailable()))
                 .build();
     }
 
@@ -32,7 +31,8 @@ public class TimeSlotMapper {
         ts.setStartDateTime(dto.getStartDateTime());
         ts.setEndDateTime(dto.getEndDateTime());
         ts.setPriceOverride(dto.getPriceOverride());
-        ts.setAvailable(dto.isAvailable());
+        // si viene null, mantenemos el default true definido en la entidad
+        ts.setAvailable(dto.getAvailable() != null ? dto.getAvailable() : ts.isAvailable());
         return ts;
     }
 

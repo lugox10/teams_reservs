@@ -1,5 +1,6 @@
 package com.lugo.teams.reservs.application.service.impl;
 
+import com.lugo.teams.reservs.application.dto.venue.VenueListDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueRequestDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
 import com.lugo.teams.reservs.application.mapper.VenueMapper;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -104,19 +106,23 @@ public class VenueServiceImpl implements VenueService {
     }
 
     // ================== FIND BY OWNER ==================
+// FIND BY OWNER -> devuelve lista de resumen (VenueListDTO)
     @Override
-    public List<VenueResponseDTO> findByOwnerId(Long ownerId) {
+    public List<VenueListDTO> findByOwnerId(Long ownerId) {
         if (ownerId == null) {
             throw new BadRequestException("ownerId es requerido");
         }
-        var venues = venueRepository.findByOwnerId(ownerId);
-        return venueMapper.toResponseDTOList(venues);
+        List<Venue> venues = venueRepository.findByOwnerId(ownerId);
+        return venueMapper.toResponseDTOList(venues); // List<VenueListDTO>
     }
 
-    // ================== FIND ACTIVE ==================
+    // FIND ACTIVE -> también debe devolver lista de resumen (VenueListDTO)
     @Override
     public List<VenueResponseDTO> findActive() {
-        var venues = venueRepository.findByActiveTrue();
-        return venueMapper.toResponseDTOList(venues);
+        List<Venue> venues = venueRepository.findByActiveTrue();
+        return venues.stream().map(venueMapper::toResponseDTO).collect(Collectors.toList()); // map a detalle por item
     }
+
+
+
 }

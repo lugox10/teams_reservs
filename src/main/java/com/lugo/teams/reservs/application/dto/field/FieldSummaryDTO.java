@@ -1,5 +1,4 @@
 package com.lugo.teams.reservs.application.dto.field;
-
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,4 +14,7 @@ public class FieldSummaryDTO {
     private Integer capacityPlayers;
     private BigDecimal pricePerHour;
     private String firstPhoto;
+
+    // Información útil para listados rápidos
+    private Integer slotMinutes;
 }

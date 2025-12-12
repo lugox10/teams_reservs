@@ -1,6 +1,7 @@
 package com.lugo.teams.reservs.application.service;
 
 import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,4 +20,9 @@ public interface FieldService {
     List<FieldDTO> findByVenueId(Long venueId);
 
     List<FieldDTO> findActiveFields();
+
+
+
+    Optional<FieldDetailDTO> findDetailById(Long id);
+
 }

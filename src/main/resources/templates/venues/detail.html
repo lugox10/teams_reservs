@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title th:text="${venue.name} ?: 'Detalle del complejo'">Detalle</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}"/>
+    <style>
+        .container { max-width:1100px; margin:24px auto; padding:0 12px; }
+        .hero { display:flex; gap:16px; flex-wrap:wrap; }
+        .hero img { width:320px; height:200px; object-fit:cover; border-radius:8px; }
+        .info { flex:1; min-width:260px; }
+        .fields-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
+        .field-card { border:1px solid #e3e3e3; padding:10px; border-radius:8px; background:#fff; }
+        .btn { padding:8px 10px; border-radius:6px; text-decoration:none; background:#1976d2; color:#fff; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <a th:href="@{/venues}" style="display:inline-block;margin-bottom:12px;">&larr; Volver a complejos</a>
+
+    <section class="hero">
+        <img th:src="${venue.mainPhotoUrl != null ? venue.mainPhotoUrl : '/images/placeholder-venue.jpg'}" th:alt="${venue.name}" />
+        <div class="info">
+            <h1 th:text="${venue.name}">Nombre Complejo</h1>
+            <p th:text="${venue.address}">Dirección</p>
+            <p>
+                <strong>Ubicación:</strong>
+                <span th:text="${venue.lat != null ? ('lat: ' + ${venue.lat} + ', lng: ' + ${venue.lng}) : 'No definida'}"></span>
+            </p>
+            <p>
+                <strong>Opciones de pago:</strong>
+                <span th:text="${venue.allowOnsitePayment ? 'Pago en sitio ' : ''}"></span>
+                <span th:text="${venue.allowBankTransfer ? '| Transferencia bancaria ' : ''}"></span>
+                <span th:text="${venue.allowOnlinePayment ? '| Pago online' : ''}"></span>
+            </p>
+        </div>
+    </section>
+
+    <hr style="margin:18px 0"/>
+
+    <section id="fields">
+        <h2>Canchas</h2>
+        <div th:if="${venue.fields == null or #lists.isEmpty(venue.fields)}">
+            <p>No hay canchas registradas en este complejo.</p>
+        </div>
+
+        <div class="fields-grid" th:if="${venue.fields != null}">
+            <div class="field-card" th:each="f : ${venue.fields}">
+                <img th:src="${f.firstPhoto != null ? f.firstPhoto : '/images/placeholder-field.jpg'}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;">
+                <h3 th:text="${f.name}">Cancha X</h3>
+                <p>
+                    <small th:text="${f.capacityPlayers != null ? ('Capacidad: ' + ${f.capacityPlayers}) : ''}"></small><br/>
+                    <small th:text="${f.pricePerHour != null ? ('Precio/hora: ' + ${f.pricePerHour} + ' COP') : ''}"></small>
+                </p>
+                <div style="margin-top:8px;">
+                    <a th:href="@{|/fields/${f.id}/detail|}" class="btn">Ver disponibilidad</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>

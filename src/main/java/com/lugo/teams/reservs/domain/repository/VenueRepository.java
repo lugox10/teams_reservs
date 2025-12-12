@@ -10,4 +10,5 @@ public interface VenueRepository {
     Optional<Venue> findById(Long id);
     List<Venue> findByOwnerId(Long ownerId);
     List<Venue> findByActiveTrue();
+
 }

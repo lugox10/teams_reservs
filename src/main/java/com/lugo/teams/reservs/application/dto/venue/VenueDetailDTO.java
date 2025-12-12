@@ -1,8 +1,8 @@
-// src/main/java/com/lugo/teams/reservs/application/dto/venue/VenueResponseDTO.java
+// package com.lugo.teams.reservs.application.dto.venue;
 package com.lugo.teams.reservs.application.dto.venue;
 
-import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 import com.lugo.teams.reservs.application.dto.owner.OwnerSummaryDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 import lombok.*;
 
 import java.util.List;
@@ -11,9 +11,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VenueResponseDTO {
+public class VenueDetailDTO {
     private Long id;
-    private OwnerSummaryDTO owner;
     private String name;
     private String address;
     private String timeZone;
@@ -21,10 +20,12 @@ public class VenueResponseDTO {
     private Double lat;
     private Double lng;
     private boolean active;
+
     private boolean allowOnsitePayment;
     private boolean allowBankTransfer;
     private boolean allowOnlinePayment;
+
     private List<String> photos;
-    private Integer fieldsCount;
-    private List<FieldSummaryDTO> fields; // opcional en detalle
+    private OwnerSummaryDTO owner;
+    private List<FieldSummaryDTO> fields;
 }

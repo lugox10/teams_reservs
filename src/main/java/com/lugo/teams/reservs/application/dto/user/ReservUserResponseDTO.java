@@ -1,8 +1,10 @@
 package com.lugo.teams.reservs.application.dto.user;
-
 import com.lugo.teams.reservs.domain.model.ReservUserRole;
 import lombok.*;
 
+/**
+ * DTO de salida para usuarios (sin password).
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,4 +18,6 @@ public class ReservUserResponseDTO {
     private String phone;
     private String email;
     private ReservUserRole role;
+    private boolean enabled;
+    private boolean locked;
 }

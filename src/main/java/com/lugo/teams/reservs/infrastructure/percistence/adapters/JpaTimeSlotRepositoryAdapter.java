@@ -43,4 +43,9 @@ public class JpaTimeSlotRepositoryAdapter implements TimeSlotRepository {
     public List<TimeSlot> findOverlappingSlots(Long fieldId, LocalDateTime start, LocalDateTime end) {
         return repo.findOverlappingSlots(fieldId, start, end);
     }
+
+    @Override
+    public List<TimeSlot> findByFieldIdAndStartDateTimeBetween(Long fieldId, LocalDateTime searchStart, LocalDateTime searchEnd) {
+        return repo.findByFieldIdAndStartDateTimeBetween(fieldId, searchStart, searchEnd);
+    }
 }

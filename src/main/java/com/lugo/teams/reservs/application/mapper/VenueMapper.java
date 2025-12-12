@@ -1,6 +1,8 @@
+// src/main/java/com/lugo/teams/reservs/application/mapper/VenueMapper.java
 package com.lugo.teams.reservs.application.mapper;
 
 import com.lugo.teams.reservs.application.dto.owner.OwnerSummaryDTO;
+import com.lugo.teams.reservs.application.dto.venue.VenueListDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueRequestDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
 import com.lugo.teams.reservs.domain.model.Owner;
@@ -14,18 +16,22 @@ import java.util.stream.Collectors;
 @Component
 public class VenueMapper {
 
-    // ================== Entity -> VenueResponseDTO ==================
     public VenueResponseDTO toResponseDTO(Venue v) {
         if (v == null) return null;
         VenueResponseDTO dto = VenueResponseDTO.builder()
                 .id(v.getId())
-                .nombre(v.getName())
-                .direccion(v.getAddress())
-                .tipoDeporte(null) // <- la entidad Venue NO tiene campo tipoDeporte hoy. Añadir en entidad si lo necesitas.
+                .name(v.getName())
+                .address(v.getAddress())
+                .timeZone(v.getTimeZone())
+                .mainPhotoUrl(v.getMainPhotoUrl())
+                .lat(v.getLat())
+                .lng(v.getLng())
                 .active(v.isActive())
                 .photos(v.getPhotos() != null ? v.getPhotos() : Collections.emptyList())
-                .timeZone(v.getTimeZone())
-                .owner(null)
+                .allowOnsitePayment(v.isAllowOnsitePayment())
+                .allowBankTransfer(v.isAllowBankTransfer())
+                .allowOnlinePayment(v.isAllowOnlinePayment())
+                .fieldsCount(v.getFields() != null ? v.getFields().size() : 0)
                 .build();
 
         if (v.getOwner() != null) {
@@ -34,41 +40,70 @@ public class VenueMapper {
             o.setName(v.getOwner().getName());
             dto.setOwner(o);
         }
+        // fields list mapping (optional) - avoid N+1 in service/repo
+        if (v.getFields() != null && !v.getFields().isEmpty()) {
+            dto.setFields(v.getFields().stream().map(field -> {
+                com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO f = new com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO();
+                f.setId(field.getId());
+                f.setName(field.getName());
+                f.setCapacityPlayers(field.getCapacityPlayers());
+                f.setPricePerHour(field.getPricePerHour());
+                f.setFirstPhoto(field.getPhotos() != null && !field.getPhotos().isEmpty() ? field.getPhotos().get(0) : null);
+                f.setSlotMinutes(field.getSlotMinutes());
+                return f;
+            }).collect(Collectors.toList()));
+        }
         return dto;
     }
 
-    public List<VenueResponseDTO> toResponseDTOList(List<Venue> list) {
+    public List<VenueListDTO> toResponseDTOList(List<Venue> list) {
         if (list == null) return Collections.emptyList();
-        return list.stream().map(this::toResponseDTO).collect(Collectors.toList());
+        return list.stream().map(v -> VenueListDTO.builder()
+                .id(v.getId())
+                .name(v.getName())
+                .mainPhotoUrl(v.getMainPhotoUrl())
+                .address(v.getAddress())
+                .lat(v.getLat())
+                .lng(v.getLng())
+                .active(v.isActive())
+                .allowOnsitePayment(v.isAllowOnsitePayment())
+                .allowBankTransfer(v.isAllowBankTransfer())
+                .allowOnlinePayment(v.isAllowOnlinePayment())
+                .fieldsCount(v.getFields() != null ? v.getFields().size() : 0)
+                .build()).collect(Collectors.toList());
     }
 
-    // ================== RequestDTO -> Entity (crear) ==================
     public Venue toEntity(VenueRequestDTO req, Owner owner) {
         if (req == null) return null;
         Venue v = new Venue();
-        // id normalmente lo setea JPA; si vas a usar para update pasa por updateEntityFromRequest
-        v.setName(req.getNombre());
-        v.setAddress(req.getDireccion());
+        v.setName(req.getName());
+        v.setAddress(req.getAddress());
         v.setTimeZone(req.getTimeZone());
-        v.setActive(true); // por defecto active = true al crear; si querés tomar from DTO agrega campo
+        v.setMainPhotoUrl(req.getMainPhotoUrl());
+        v.setLat(req.getLat());
+        v.setLng(req.getLng());
+        v.setActive(req.getActive() != null ? req.getActive() : true);
         v.setPhotos(req.getPhotos() != null ? req.getPhotos() : Collections.emptyList());
         v.setOwner(owner);
-        // tipoDeporte: la entidad Venue no tiene este campo. Si querés persistirlo,
-        // agrega atributo tipoDeporte en Venue y descomenta la línea siguiente
-        // v.setTipoDeporte(req.getTipoDeporte());
+        if (req.getAllowOnsitePayment() != null) v.setAllowOnsitePayment(req.getAllowOnsitePayment());
+        if (req.getAllowBankTransfer() != null) v.setAllowBankTransfer(req.getAllowBankTransfer());
+        if (req.getAllowOnlinePayment() != null) v.setAllowOnlinePayment(req.getAllowOnlinePayment());
         return v;
     }
 
-    /**
-     * Actualiza una entidad existente con campos del request (no sobrescribe audit fields ni relaciones no provistas).
-     */
     public void updateEntityFromRequest(Venue target, VenueRequestDTO req, Owner owner) {
         if (target == null || req == null) return;
-        if (req.getNombre() != null) target.setName(req.getNombre());
-        if (req.getDireccion() != null) target.setAddress(req.getDireccion());
+        if (req.getName() != null) target.setName(req.getName());
+        if (req.getAddress() != null) target.setAddress(req.getAddress());
         if (req.getTimeZone() != null) target.setTimeZone(req.getTimeZone());
+        if (req.getMainPhotoUrl() != null) target.setMainPhotoUrl(req.getMainPhotoUrl());
+        if (req.getLat() != null) target.setLat(req.getLat());
+        if (req.getLng() != null) target.setLng(req.getLng());
         if (req.getPhotos() != null) target.setPhotos(req.getPhotos());
+        if (req.getActive() != null) target.setActive(req.getActive());
+        if (req.getAllowOnsitePayment() != null) target.setAllowOnsitePayment(req.getAllowOnsitePayment());
+        if (req.getAllowBankTransfer() != null) target.setAllowBankTransfer(req.getAllowBankTransfer());
+        if (req.getAllowOnlinePayment() != null) target.setAllowOnlinePayment(req.getAllowOnlinePayment());
         if (owner != null) target.setOwner(owner);
-        // tipoDeporte: ver comentario en toEntity
     }
 }

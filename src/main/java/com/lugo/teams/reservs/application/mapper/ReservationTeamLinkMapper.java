@@ -28,4 +28,16 @@ public class ReservationTeamLinkMapper {
         e.setCreatedAt(dto.getCreatedAt());
         return e;
     }
+
+    public ReservationTeamLinkDTO toTeamLinkDto(ReservationTeamLink link) {
+        if (link == null) return null;
+        return ReservationTeamLinkDTO.builder()
+                .id(link.getId())
+                .teamsFcMatchId(link.getTeamsFcMatchId())
+                .teamsFcUrl(link.getTeamsFcUrl())
+                .teamName(link.getTeamName())
+                .createdAt(link.getCreatedAt()) // BaseEntity
+                .build();
+    }
+
 }
