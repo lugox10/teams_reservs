@@ -30,4 +30,5 @@ public interface DataTimeSlotRepository extends JpaRepository<TimeSlot, Long> {
                                         @Param("end") LocalDateTime end);
 
     List<TimeSlot> findByFieldIdAndStartDateTimeBetween(Long fieldId, LocalDateTime searchStart, LocalDateTime searchEnd);
+
 }

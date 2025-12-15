@@ -1,0 +1,17 @@
+<!-- Fragmento de navegación principal -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4" th:fragment="navbar">
+  <div class="container-fluid">
+    <a class="navbar-brand" th:href="@{/teams-reservs/venues}">Reservas Fútbol</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" th:href="@{/teams-reservs/venues}">Complejos</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/teams-reservs/reservations}">Mis Reservas</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/teams-reservs/dashboard/user}">Mi Perfil</a></li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" th:href="@{/teams-reservs/dashboard/owner}">Owner</a></li>
+        <li class="nav-item"><a class="nav-link" th:href="@{/teams-reservs/login}">Salir</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,7 +1,17 @@
 package com.lugo.teams.reservs.infrastructure.web.controller;
 
+import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
+import com.lugo.teams.reservs.application.dto.venue.VenueListDTO;
 import com.lugo.teams.reservs.application.service.OwnerDashboardService;
+import com.lugo.teams.reservs.application.dto.venue.VenueRequestDTO;
+import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldRequestDTO;
+
+import com.lugo.teams.reservs.application.service.VenueService;
+import com.lugo.teams.reservs.application.service.FieldService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -9,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.validation.BindingResult;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,6 +35,8 @@ public class OwnerDashboardController {
 
     private static final Logger log = LoggerFactory.getLogger(OwnerDashboardController.class);
     private final OwnerDashboardService ownerDashboardService;
+    private final VenueService venueService;
+    private final FieldService fieldService;
 
     @GetMapping
     public String overview(@RequestParam("ownerId") Long ownerId,
@@ -99,4 +111,39 @@ public class OwnerDashboardController {
         // Thymeleaf template: src/main/resources/templates/dashboard/owner/revenue.html
         return "dashboard/owner/revenue";
     }
+
+    // Listar venues del owner
+    @GetMapping("/venues")
+    public String listVenues(@RequestParam("ownerId") Long ownerId, Model model) {
+        List<VenueListDTO> venues = venueService.findByOwnerId(ownerId);
+        model.addAttribute("venues", venues);
+        model.addAttribute("ownerId", ownerId);
+        return "dashboard/owner/venues";
+    }
+
+    // Formulario para crear venue
+    @GetMapping("/venues/new")
+    public String newVenueForm(@RequestParam("ownerId") Long ownerId, Model model) {
+        model.addAttribute("venue", new VenueRequestDTO());
+        model.addAttribute("ownerId", ownerId);
+        return "dashboard/owner/venue-form";
+    }
+
+    // Guardar venue
+    @PostMapping("/venues")
+
+    public String createVenue(@RequestParam("ownerId") Long ownerId,
+                             @ModelAttribute("venue") VenueRequestDTO dto,
+                             BindingResult br,
+                             RedirectAttributes ra) {
+        if (br.hasErrors()) {
+            return "dashboard/owner/venue-form";
+        }
+        dto.setOwnerId(ownerId);
+        venueService.createVenue(dto);
+        ra.addFlashAttribute("success", "Complejo creado correctamente");
+        return "redirect:/dashboard/owner/venues?ownerId=" + ownerId;
+    }
+
+
 }

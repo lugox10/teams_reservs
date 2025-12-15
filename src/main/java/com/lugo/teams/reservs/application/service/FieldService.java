@@ -2,7 +2,11 @@ package com.lugo.teams.reservs.application.service;
 
 import com.lugo.teams.reservs.application.dto.field.FieldDTO;
 import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldRequestDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,13 +15,13 @@ import java.util.Optional;
  */
 public interface FieldService {
 
-    FieldDTO createField(FieldDTO dto);
+    FieldDTO createField(FieldRequestDTO dto);
 
     FieldDTO updateField(Long id, FieldDTO dto);
 
     Optional<FieldDTO> findById(Long id);
 
-    List<FieldDTO> findByVenueId(Long venueId);
+    List<FieldDetailDTO> findByVenueId(Long venueId);
 
     List<FieldDTO> findActiveFields();
 
@@ -25,4 +29,9 @@ public interface FieldService {
 
     Optional<FieldDetailDTO> findDetailById(Long id);
 
+
+
+    List<FieldSummaryDTO> findSummariesByVenueId(Long id);
+
+    List<LocalTime> getBookedHoursForDate(Long id, LocalDate date);
 }

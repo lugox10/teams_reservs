@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Crear cancha</title>
+    <meta charset="UTF-8"/>
+</head>
+<body>
+
+<h2>Nueva cancha</h2>
+
+<form th:action="@{|/dashboard/owner/venues/${venueId}/fields|}"
+      th:object="${field}"
+      method="post">
+
+    <!-- Nombre -->
+    <div>
+        <label>Nombre de la cancha</label>
+        <input type="text" th:field="*{name}" placeholder="Ej: Cancha Fútbol 7 Sintética"/>
+        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+    </div>
+
+    <!-- Tipo fútbol -->
+    <div>
+        <label>Tipo de fútbol</label>
+        <select th:field="*{fieldType}">
+            <option value="">-- Seleccione --</option>
+            <option th:each="t : ${fieldTypes}"
+                    th:value="${t}"
+                    th:text="${t}">
+            </option>
+        </select>
+    </div>
+
+    <!-- Superficie -->
+    <div>
+        <label>Superficie</label>
+        <select th:field="*{surface}">
+            <option value="">-- Seleccione --</option>
+            <option th:each="s : ${surfaceTypes}"
+                    th:value="${s}"
+                    th:text="${s}">
+            </option>
+        </select>
+    </div>
+
+    <!-- Capacidad -->
+    <div>
+        <label>Capacidad de jugadores</label>
+        <input type="number" th:field="*{capacityPlayers}" min="1"/>
+    </div>
+
+    <!-- Precio -->
+    <div>
+        <label>Precio por hora</label>
+        <input type="number" step="0.01" th:field="*{pricePerHour}"/>
+        <small>Este será el valor que verá el usuario</small>
+    </div>
+
+    <!-- Horario -->
+    <fieldset>
+        <legend>Horario</legend>
+
+        <label>Apertura</label>
+        <input type="number" th:field="*{openHour}" min="0" max="23"/>
+
+        <label>Cierre</label>
+        <input type="number" th:field="*{closeHour}" min="1" max="24"/>
+    </fieldset>
+
+    <!-- Slots -->
+    <div>
+        <label>Duración del slot (minutos)</label>
+        <input type="number" th:field="*{slotMinutes}" min="30"/>
+        <small>Normalmente 60 minutos</small>
+    </div>
+
+    <!-- Mínimo de horas -->
+    <div>
+        <label>Mínimo de horas a reservar</label>
+        <input type="number" th:field="*{minBookingHours}" min="1"/>
+    </div>
+
+    <button type="submit">Guardar cancha</button>
+</form>
+
+</body>
+</html>

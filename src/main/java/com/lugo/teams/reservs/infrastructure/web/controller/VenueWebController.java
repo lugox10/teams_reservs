@@ -1,10 +1,10 @@
 package com.lugo.teams.reservs.infrastructure.web.controller;
 
-import com.lugo.teams.reservs.application.dto.venue.VenueDetailDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueListDTO;
 import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
-import com.lugo.teams.reservs.application.mapper.VenueMapper;
+import com.lugo.teams.reservs.application.dto.field.FieldSummaryDTO;
 import com.lugo.teams.reservs.application.service.VenueService;
+import com.lugo.teams.reservs.application.service.FieldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,40 +13,29 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Controller
-@RequiredArgsConstructor
 @RequestMapping("/venues")
+@RequiredArgsConstructor
 public class VenueWebController {
 
     private final VenueService venueService;
-    private final VenueMapper venueMapper;
+    private final FieldService fieldService;
 
-    /**
-     * GET /venues
-     * Página con lista de venues (cards). Usa venueService.findActive() que devuelve List<VenueListDTO>.
-     */
+    // Lista pública de venues (grid con foto/logo)
     @GetMapping
-    public String listAll(Model model) {
-        List<VenueResponseDTO> venues = venueService.findActive();
+    public String listVenues(Model model) {
+        List<VenueResponseDTO> venues = venueService.findActive(); // ajusta si usas otro método
         model.addAttribute("venues", venues);
-        return "venues/list"; // crea templates/venues/list.html
+        return "venues/list";
     }
 
-    /**
-     * GET /venues/{id}
-     * Página detalle de venue + lista de fields (usamos VenueDetailDTO).
-     */
+    // Detalle del venue y listado de fields
     @GetMapping("/{id}")
-    public String detail(@PathVariable Long id, Model model) {
-        var opt = venueService.findById(id);
-        if (opt.isEmpty()) {
-            model.addAttribute("error", "Complejo no encontrado: " + id);
-            return "redirect:/venues";
-        }
-        VenueResponseDTO dto = opt.get();
-        model.addAttribute("venue", dto);
-        // para comodidad del fragment/JS: pasar venueId y some basic info
-        model.addAttribute("venueId", dto.getId());
-        model.addAttribute("venueName", dto.getName());
-        return "venues/detail"; // crea templates/venues/detail.html y usa dto.fields
+    public String venueDetail(@PathVariable("id") Long id, Model model) {
+        VenueResponseDTO venue = venueService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Venue no encontrado: " + id));
+        List<FieldSummaryDTO> fields = fieldService.findSummariesByVenueId(id); // agrega este método si no existe
+        model.addAttribute("venue", venue);
+        model.addAttribute("fields", fields);
+        return "venues/detail";
     }
 }

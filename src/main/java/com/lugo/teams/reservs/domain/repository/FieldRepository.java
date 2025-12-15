@@ -2,6 +2,8 @@ package com.lugo.teams.reservs.domain.repository;
 
 import com.lugo.teams.reservs.domain.model.Field;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,4 +15,6 @@ public interface FieldRepository {
 
     // nuevo: devuelve entidad con detalles (coincide con DataFieldRepository.findWithDetailsById)
     Optional<Field> findWithDetailsById(Long id);
+
+    List<LocalTime> findBookedStartTimesForDate(Field field, LocalDate date);
 }

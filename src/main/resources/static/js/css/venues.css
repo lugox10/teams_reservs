@@ -1,0 +1,21 @@
+/* venues.css - básico */
+.grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap:1rem; padding:1rem; }
+.card { border:1px solid #ddd; border-radius:8px; overflow:hidden; text-decoration:none; color:inherit; }
+.card-img { width:100%; height:160px; object-fit:cover; }
+.card-body { padding:0.6rem; }
+.fields-grid { display:grid; gap:1rem; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); padding:1rem; }
+.field-card { border:1px solid #eee; padding:0.6rem; border-radius:6px; display:flex; gap:0.6rem; align-items:center; }
+.field-card img { width:120px; height:80px; object-fit:cover; border-radius:4px; }
+
+.slots-grid { display:flex; flex-wrap:wrap; gap:6px; padding:8px; margin-top:8px; max-height:400px; overflow:auto; }
+.slot-btn { padding:8px 10px; border-radius:6px; border:1px solid #ccc; min-width:110px; text-align:center; cursor:pointer; }
+.slot-btn.available { background:#e8f8ef; }
+.slot-btn.booked { background:#ffdede; color:#800; cursor:not-allowed; }
+.slot-btn.blocked { background:#f0f0f0; color:#666; cursor:not-allowed; }
+.slot-btn.selected { outline:3px solid #2a9d8f; }
+
+.modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); }
+.modal-content { background:white; padding:1rem; border-radius:8px; width:90%; max-width:900px; max-height:90vh; overflow:auto; }
+.modal-close { float:right; }
+.date-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.btn-confirm { margin-top:12px; padding:10px 16px; background:#1976d2; color:white; border:none; border-radius:6px; cursor:pointer; }

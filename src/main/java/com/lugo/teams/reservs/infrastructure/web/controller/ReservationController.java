@@ -1,6 +1,7 @@
 package com.lugo.teams.reservs.infrastructure.web.controller;
 
 import com.lugo.teams.reservs.application.dto.field.FieldDTO;
+import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationRequestDTO;
 import com.lugo.teams.reservs.application.dto.slot.TimeSlotDTO;
@@ -190,7 +191,7 @@ public class ReservationController {
     // JSON endpoints para selects dinámicos (AJAX)
     @GetMapping("/api/fields")
     @ResponseBody
-    public List<FieldDTO> findFieldsByVenue(@RequestParam Long venueId) {
+    public List<FieldDetailDTO> findFieldsByVenue(@RequestParam Long venueId) {
         return fieldService.findByVenueId(venueId);
     }
 

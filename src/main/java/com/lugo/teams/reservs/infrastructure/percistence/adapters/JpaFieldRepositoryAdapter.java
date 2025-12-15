@@ -1,12 +1,13 @@
 package com.lugo.teams.reservs.infrastructure.percistence.adapters;
 
-import aj.org.objectweb.asm.commons.Remapper;
-import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.repository.FieldRepository;
 import com.lugo.teams.reservs.infrastructure.percistence.jpa.DataFieldRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,5 +46,13 @@ public class JpaFieldRepositoryAdapter implements FieldRepository {
     public Optional<Field> findWithDetailsById(Long id) {
         return repo.findWithDetailsById(id);
     }
+
+    @Override
+    public List<LocalTime> findBookedStartTimesForDate(Field field, LocalDate date) {
+        return repo.findBookedStartTimesForDate(field, date).stream()
+                .map(hour -> LocalTime.of(hour, 0))
+                .toList();
+    }
+
 
 }

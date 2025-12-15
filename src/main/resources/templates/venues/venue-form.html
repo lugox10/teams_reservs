@@ -1,31 +1,48 @@
-<!-- src/main/resources/templates/venues/venue-form.html -->
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="utf-8"/></head>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Crear Complejo Deportivo</title>
+</head>
 <body>
-<div th:replace="fragments/header :: mainHeader"></div>
-<main style="max-width:800px;margin:20px auto;padding:0 16px;">
-    <h1 th:text="${venue != null ? 'Editar venue' : 'Crear venue'}">Venue</h1>
 
-    <form th:action="${venue != null} ? @{/owner/venues/{id}(id=${venue.id})} : @{/owner/venues}" th:method="post" th:object="${venueRequest}">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-        <div>
-            <label>Nombre</label>
-            <input type="text" th:field="*{name}" />
-        </div>
-        <div>
-            <label>Dirección</label>
-            <input type="text" th:field="*{address}" />
-        </div>
-        <div>
-            <label>Zona horaria</label>
-            <input type="text" th:field="*{timeZone}" placeholder="America/Bogota" />
-        </div>
-        <div style="margin-top:10px;">
-            <button type="submit" style="padding:8px 10px;background:#1976d2;color:#fff;border-radius:6px;">Guardar</button>
-        </div>
-    </form>
-</main>
-<div th:replace="fragments/footer :: mainFooter"></div>
+<h2>Nuevo Complejo Deportivo</h2>
+
+<form th:action="@{/owner/venues}" th:object="${venue}" method="post">
+
+    <label>Nombre del complejo</label>
+    <input type="text" th:field="*{name}" />
+    <p th:errors="*{name}"></p>
+
+    <label>Dirección</label>
+    <input type="text" th:field="*{address}" />
+
+    <label>Zona horaria</label>
+    <input type="text" th:field="*{timeZone}" placeholder="America/Bogota"/>
+
+    <label>Foto principal (URL)</label>
+    <input type="text" th:field="*{mainPhotoUrl}" />
+
+    <h4>Métodos de pago</h4>
+    <label>
+        <input type="checkbox" th:field="*{allowOnsitePayment}" /> Pago en cancha
+    </label><br>
+    <label>
+        <input type="checkbox" th:field="*{allowBankTransfer}" /> Transferencia bancaria
+    </label><br>
+    <label>
+        <input type="checkbox" th:field="*{allowOnlinePayment}" /> Pago online (futuro)
+    </label>
+
+    <h4>Ubicación (opcional)</h4>
+    <label>Latitud</label>
+    <input type="number" step="any" th:field="*{lat}" />
+    <label>Longitud</label>
+    <input type="number" step="any" th:field="*{lng}" />
+
+    <br><br>
+    <button type="submit">Crear Complejo</button>
+
+</form>
+
 </body>
 </html>

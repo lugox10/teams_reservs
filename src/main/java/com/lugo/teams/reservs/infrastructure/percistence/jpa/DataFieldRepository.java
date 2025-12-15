@@ -4,8 +4,12 @@ import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.domain.model.Field;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +26,22 @@ public interface DataFieldRepository extends JpaRepository<Field, Long> {
     Optional<Field> findWithDetailsById(Long id);
 
     Optional<FieldDetailDTO> findDetailById(Long id);
+
+    @Query("""
+    select hour(r.startDateTime)
+    from Reservation r
+    where r.field = :field
+      and date(r.startDateTime) = :date
+""")
+    List<Integer> findBookedStartTimesForDate(
+            @Param("field") Field field,
+            @Param("date") LocalDate date
+    );
+
+
+
+
+
+
+
 }

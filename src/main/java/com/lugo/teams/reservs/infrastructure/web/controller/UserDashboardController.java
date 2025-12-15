@@ -37,6 +37,6 @@ public class UserDashboardController {
         List<ReservationResponseDTO> reservations = reservationService.findByUser(username);
         model.addAttribute("reservations", reservations);
 
-        return "reserv-users/overview";
+        return "dashboard/user";
     }
 }

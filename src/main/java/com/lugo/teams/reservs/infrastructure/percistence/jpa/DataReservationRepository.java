@@ -48,4 +48,6 @@ public interface DataReservationRepository extends JpaRepository<Reservation, Lo
             "ORDER BY r.startDateTime")
     List<Reservation> findByVenueUpcoming(@Param("venueId") Long venueId,
                                           @Param("from") LocalDateTime from);
+
+
 }
