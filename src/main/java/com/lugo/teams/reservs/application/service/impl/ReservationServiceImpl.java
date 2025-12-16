@@ -37,7 +37,9 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -76,56 +78,46 @@ public class ReservationServiceImpl implements ReservationService {
         if (request == null) throw new BadRequestException("request es requerido");
         if (request.getFieldId() == null) throw new BadRequestException("fieldId es requerido");
 
+        // --- 1) Cargar Field y configuración básica ---
         Long fieldId = request.getFieldId();
         Field field = fieldRepo.findById(fieldId)
                 .orElseThrow(() -> new NotFoundException("Field no encontrado: " + fieldId));
 
-        // slot configuration from Field (fallbacks)
         int slotMinutes = (field.getSlotMinutes() != null) ? field.getSlotMinutes() : 60;
         int minBookingHours = (field.getMinBookingHours() != null) ? field.getMinBookingHours() : 1;
         int openHour = (field.getOpenHour() != null) ? field.getOpenHour() : 6;
         int closeHour = (field.getCloseHour() != null) ? field.getCloseHour() : 23;
 
+        // --- 2) Resolver timeslot / start / end ---
         TimeSlot timeSlot = null;
+        LocalDateTime start;
+        LocalDateTime end;
+
         if (request.getTimeSlotId() != null) {
             timeSlot = timeSlotRepo.findById(request.getTimeSlotId())
                     .orElseThrow(() -> new NotFoundException("TimeSlot no encontrado: " + request.getTimeSlotId()));
-
             // ensure timeslot belongs to the requested field
             if (timeSlot.getField() == null || !Objects.equals(timeSlot.getField().getId(), fieldId)) {
                 throw new BadRequestException("El timeSlot no pertenece al field indicado");
             }
-
             long tsMins = Duration.between(timeSlot.getStartDateTime(), timeSlot.getEndDateTime()).toMinutes();
             if (tsMins % slotMinutes != 0) {
-                // timeslot debe coincidir con la granularidad del field
                 throw new BadRequestException("TimeSlot no coincide con la duración de slot del campo");
             }
             if (tsMins > 24 * 60) throw new BadRequestException("TimeSlot inválido (demasiado largo)");
-            // mark unavailable if flagged:
-            if (!timeSlot.isAvailable()) {
-                throw new ConflictException("TimeSlot bloqueado por el owner");
-            }
-        }
+            if (!timeSlot.isAvailable()) throw new ConflictException("TimeSlot bloqueado por el owner");
 
-        // calcular start / end con prioridad: timeSlot -> start + duration -> start+end
-        LocalDateTime start;
-        LocalDateTime end;
-        if (timeSlot != null) {
             start = timeSlot.getStartDateTime();
             end = timeSlot.getEndDateTime();
         } else {
+            // start provided in request
             start = request.getStartDateTime();
-            Integer duration = request.getDurationMinutes();
             if (start == null) throw new BadRequestException("startDateTime es requerido si no se usa timeSlot");
 
-            // validar alineamiento con slotMinutes (ej: si slotMinutes=60, minute debe ser 0)
-            if (start.getMinute() % slotMinutes != 0) {
-                throw new BadRequestException("startDateTime debe alinearse a la granularidad del slot (" + slotMinutes + " min)");
-            }
-
+            // duration from request or endDateTime
+            Integer duration = request.getDurationMinutes();
             if (duration != null) {
-                if (duration < 1) throw new BadRequestException("durationMinutes debe ser >= 1");
+                if (duration < slotMinutes) throw new BadRequestException("durationMinutes debe ser >= slotMinutes");
                 if (duration % slotMinutes != 0) {
                     throw new BadRequestException("durationMinutes debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
                 }
@@ -138,41 +130,69 @@ public class ReservationServiceImpl implements ReservationService {
                 if (minutes % slotMinutes != 0) {
                     throw new BadRequestException("La duración entre start y end debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
                 }
+                duration = (int) minutes;
             }
         }
 
-        // validar limites horarios del field (usando horas locales en LocalDateTime)
+        // --- 3) Validaciones temporales básicas ---
+        if (!start.isBefore(end)) throw new BadRequestException("startDateTime debe ser anterior a endDateTime");
+
+        // validar alineamiento a la granularidad del campo (por ejemplo, si slotMinutes=60 -> minutes==0)
+        if (start.getMinute() % slotMinutes != 0 || end.getMinute() % slotMinutes != 0) {
+            throw new BadRequestException("start/end deben alinearse a la granularidad del slot (" + slotMinutes + " minutos)");
+        }
+
+        // interpretar closeHour como límite exclusivo: última hora de inicio permitida < closeHour
+        // permitimos que end == closeHour:00, pero no que end > closeHour:00
         int startHour = start.getHour();
         int endHour = end.getHour();
-        // We interpret closeHour as exclusive upper bound (ej closeHour=23 -> last slot starts before 23:00)
-        if (startHour < openHour || (endHour > closeHour && !(endHour == closeHour && end.getMinute() == 0))) {
+        if (startHour < openHour || end.isAfter(LocalDateTime.of(end.toLocalDate(), LocalTime.of(closeHour, 0)))) {
             throw new BadRequestException(String.format("Reserva fuera del horario operativo del campo (open=%d, close=%d)", openHour, closeHour));
         }
 
-        validateTimeBounds(start, end); // ya valida start < end y máximo limites generales (ej 60 min rule si aún aplica)
-
-        // calcular playersCount y validacion de capacidad
-        int playersCount = request.getPlayersCount() == null ? 1 : request.getPlayersCount();
+        // --- 4) playersCount / capacity ---
+        int playersCount = (request.getPlayersCount() == null) ? 1 : request.getPlayersCount();
         if (field.getCapacityPlayers() != null && playersCount > field.getCapacityPlayers()) {
-            throw new ConflictException(String.format("playersCount (%d) excede la capacidad del campo (%d)",
-                    playersCount, field.getCapacityPlayers()));
+            throw new ConflictException(String.format("playersCount (%d) excede la capacidad del campo (%d)", playersCount, field.getCapacityPlayers()));
         }
 
-        // comprobar solapamientos: la query cuenta reservas no-canceladas que se solapan
+        // --- 5) Comprobar solapamientos en la misma cancha ---
         long overlapping = reservationRepo.countOverlappingReservations(fieldId, start, end);
         if (overlapping > 0) {
             meterRegistry.counter("reservation.conflict").increment();
             throw new ConflictException("Ya existe una reserva solapada en ese horario");
         }
 
-        // crear entidad via mapper y forzar start/end calculados
-        Reservation entity = reservationMapper.toEntity(request, field, timeSlot);
+        // --- 6) Regla de negocio: máximo 2 horas por día por usuario ---
+        // Solo aplicamos esta regla si request trae userName (usuario autenticado). Si es guest, no aplicamos.
+        String requestUserName = request.getUserName();
+        if (requestUserName != null && !requestUserName.isBlank()) {
+            LocalDate reservationDate = start.toLocalDate();
+            LocalDateTime dayStart = reservationDate.atStartOfDay();
+            LocalDateTime dayEnd = dayStart.plusDays(1);
+
+            // **REQUIERE** que tu reservationRepo tenga un método que traiga reservas del usuario en rango:
+            // List<Reservation> findByUserNameAndStartDateTimeBetween(String userName, LocalDateTime from, LocalDateTime to);
+            List<Reservation> existing = reservationRepo.findByUserNameAndStartDateTimeBetween(requestUserName, dayStart, dayEnd);
+
+            long existingMinutes = existing.stream()
+                    .filter(r -> r.getStatus() != ReservationStatus.CANCELLED) // ajustar según tu enum/status
+                    .mapToLong(r -> Duration.between(r.getStartDateTime(), r.getEndDateTime()).toMinutes())
+                    .sum();
+
+            long newMinutes = Duration.between(start, end).toMinutes();
+            if (existingMinutes + newMinutes > 120) { // 2 horas = 120 min
+                throw new BadRequestException("Ya tienes reservado más de 2 horas en esa fecha. Máximo permitido por día: 2 horas.");
+            }
+        }
+
+        // --- 7) Crear entidad, rellenar campos y denormalizaciones ---
+        Reservation entity = reservationMapper.toEntity(request, field, timeSlot); // tu mapper
         entity.setStartDateTime(start);
         entity.setEndDateTime(end);
         entity.setDurationMinutes((int) Duration.between(start, end).toMinutes());
         entity.setPlayersCount(playersCount);
 
-        // denormalizar venueId si está disponible (mejora consultas owner)
         if (field.getVenue() != null && field.getVenue().getId() != null) {
             entity.setVenueId(field.getVenue().getId());
         }
@@ -180,7 +200,7 @@ public class ReservationServiceImpl implements ReservationService {
         if (entity.getStatus() == null) entity.setStatus(ReservationStatus.PENDING);
         if (entity.getPaymentStatus() == null) entity.setPaymentStatus(PaymentStatus.NOT_INITIATED);
 
-        // calcular totalAmount (timeSlot.override o field.pricePerHour)
+        // calcular totalAmount
         BigDecimal total = null;
         long minutes = Duration.between(start, end).toMinutes();
         double hours = minutes / 60.0;
@@ -191,9 +211,10 @@ public class ReservationServiceImpl implements ReservationService {
         }
         if (total != null) entity.setTotalAmount(total);
 
-        // vincular ReservUser o guest según request
+        // vincular ReservUser o guest según request (tu método existente)
         attachUserOrGuest(entity, request);
 
+        // --- 8) Persistir ---
         Reservation saved = reservationRepo.save(entity);
         meterRegistry.counter("reservation.created").increment();
 
@@ -203,8 +224,10 @@ public class ReservationServiceImpl implements ReservationService {
                 saved.getField().getId(), saved.getStartDateTime(), saved.getEndDateTime());
 
         eventPublisher.publishEvent(new ReservationCreatedEvent(this, saved.getId()));
+
         return reservationMapper.toDTO(saved);
     }
+
 
 
     // ---------------------- UPDATE ----------------------

@@ -1,24 +1,56 @@
-<!-- src/main/resources/templates/reserv-users/form.html -->
+<!-- reservations/form.html -->
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8"/>
-    <title th:text="${editingId != null ? 'Editar reserva' : 'Nueva reserva'}">Nueva reserva</title>
+    <title>Reservar</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
 </head>
-<body class="p-4">
-<div class="container">
-    <h1 th:text="${editingId != null ? 'Editar reserva' : 'Nueva reserva'}">Nueva reserva</h1>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+<main class="container py-4" style="max-width:900px;">
+    <h2>Crear / Editar reserva</h2>
 
-    <!-- Mensajes flash simples -->
-    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-
-    <div class="card">
-        <div class="card-body">
-            <!-- Vista eliminada. Usar fields/detail.html para reservas. -->
+    <form th:action="@{/reservations}" th:object="${reservation}" method="post">
+        <input type="hidden" name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <div class="mb-2">
+            <label>Venue</label>
+            <select th:field="*{venueId}" class="form-select" id="venueSelect">
+                <option value="">-- Selecciona --</option>
+                <option th:each="v : ${venues}" th:value="${v.id}" th:text="${v.name}"></option>
+            </select>
         </div>
-    </div>
-</div>
+
+        <div class="mb-2">
+            <label>Cancha</label>
+            <select th:field="*{fieldId}" class="form-select" id="fieldSelect">
+                <option value="">-- Selecciona --</option>
+                <option th:each="f : ${fields}" th:value="${f.id}" th:text="${f.name}"></option>
+            </select>
+        </div>
+
+        <div class="mb-2">
+            <label>Fecha inicio</label>
+            <input type="datetime-local" th:field="*{startDateTime}" class="form-control"/>
+        </div>
+
+        <div class="mb-2">
+            <label>Fecha fin</label>
+            <input type="datetime-local" th:field="*{endDateTime}" class="form-control"/>
+        </div>
+
+        <div class="mb-2">
+            <label>Jugadores</label>
+            <input type="number" th:field="*{playersCount}" min="1" class="form-control"/>
+        </div>
+
+        <div class="mb-2">
+            <label>Notas</label>
+            <textarea th:field="*{notes}" class="form-control"></textarea>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Guardar</button>
+    </form>
+</main>
 </body>
 </html>

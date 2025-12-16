@@ -14,25 +14,44 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    // NOTA: no inyectamos RoleBasedAuthSuccessHandler por constructor para evitar ciclos.
-    // Lo recibimos como parámetro del método @Bean securityFilterChain(...).
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   RoleBasedAuthSuccessHandler authSuccessHandler) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            RoleBasedAuthSuccessHandler authSuccessHandler
+    ) throws Exception {
+
         http
+                // 🔐 AUTORIZACIÓN
                 .authorizeHttpRequests(auth -> auth
+
+                        // Públicas
                         .requestMatchers(
                                 "/teams-reservs/login",
-                                "/css/**", "/js/**", "/images/**",
-                                "/reserv-users/**", "/reserv-users/register",
-                                "/login", "/error"
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/reserv-users/**",
+                                "/error"
                         ).permitAll()
-                        .requestMatchers("/owner/**").hasRole("OWNER")
+
+                        // OWNER
+                        .requestMatchers("/dashboard/owner/**").hasRole("OWNER")
+
+                        // USER
+                        .requestMatchers(
+                                "/dashboard/user/**",
+                                "/venues/**",
+                                "/reservations/**"
+                        ).hasRole("USER")
+
+                        // Cualquier otra → autenticado
                         .anyRequest().authenticated()
                 )
+
+                // 🔑 LOGIN
                 .formLogin(form -> form
                         .loginPage("/teams-reservs/login")
                         .loginProcessingUrl("/teams-reservs/login")
@@ -42,25 +61,35 @@ public class SecurityConfig {
                         .failureUrl("/teams-reservs/login?error=true")
                         .permitAll()
                 )
+
+                // 🚪 LOGOUT
                 .logout(logout -> logout
                         .logoutUrl("/teams-reservs/logout")
                         .logoutSuccessUrl("/teams-reservs/login?logout")
                         .permitAll()
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers(new AntPathRequestMatcher("/webhook/**")));
+
+                // 🛡️ CSRF (webhooks / integraciones)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                new AntPathRequestMatcher("/webhook/**")
+                        )
+                );
 
         return http.build();
     }
 
-    // Hacemos el bean estático para que se cree sin instanciar la clase de configuración,
-    // evitando que otros beans que dependan de SecurityConfig creen ciclos.
+    // 🔐 Password encoder
     @Bean
     public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 🔐 Authentication manager
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration authConfig
+    ) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 }

@@ -1,0 +1,49 @@
+<!-- src/main/resources/templates/dashboard/owner/venues.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis complejos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<div class="container py-4">
+    <h1>Mis complejos deportivos</h1>
+    <p class="text-muted">Administra tus sedes y sus canchas</p>
+
+    <a th:href="@{/dashboard/owner/venues/new}"
+       class="btn btn-primary mb-3">
+        ➕ Crear nuevo complejo
+    </a>
+
+    <div class="row">
+        <div class="col-md-4 mb-3" th:each="venue : ${venues}">
+            <div class="card h-100">
+                <img th:if="${venue.logoUrl != null}"
+                     th:src="${venue.logoUrl}"
+                     class="card-img-top"
+                     alt="logo"/>
+
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${venue.name}">Nombre</h5>
+                    <p class="card-text" th:text="${venue.address}">Dirección</p>
+
+                    <a th:href="@{/dashboard/owner/venues/{id}/fields(id=${venue.id})}"
+                       class="btn btn-outline-primary btn-sm">
+                        ⚽ Gestionar canchas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${#lists.isEmpty(venues)}" class="col-12">
+            <div class="alert alert-info">
+                Aún no has creado ningún complejo deportivo.
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

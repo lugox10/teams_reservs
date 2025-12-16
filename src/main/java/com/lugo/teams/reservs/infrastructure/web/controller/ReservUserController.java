@@ -17,27 +17,32 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/reserv-users")
 public class ReservUserController {
 
-    private static final Logger log = LoggerFactory.getLogger(ReservUserController.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(ReservUserController.class);
 
     private final ReservUserService userService;
 
     @GetMapping("/register")
     public String registerForm(Model model) {
         model.addAttribute("user", new ReservUserRequestDTO());
-        return "reserv-users/register"; // crear plantilla Thymeleaf
+        return "reserv-users/register";
     }
 
     @PostMapping("/register")
-    public String register(@Valid @ModelAttribute("user") ReservUserRequestDTO dto,
-                           BindingResult br,
-                           RedirectAttributes ra) {
+    public String register(
+            @Valid @ModelAttribute("user") ReservUserRequestDTO dto,
+            BindingResult br,
+            RedirectAttributes ra) {
+
         if (br.hasErrors()) {
             return "reserv-users/register";
         }
+
         try {
-            var created = userService.register(dto);
-            ra.addFlashAttribute("success", "Usuario registrado. Inicia sesión.");
-            return "redirect:/teams-reservs/login"; // o la ruta que uses
+            userService.register(dto);
+            ra.addFlashAttribute("success",
+                    "Usuario registrado. Inicia sesión.");
+            return "redirect:/teams-reservs/login";
         } catch (Exception ex) {
             log.warn("Error registrando usuario: {}", ex.getMessage());
             ra.addFlashAttribute("error", ex.getMessage());

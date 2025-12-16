@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,16 +28,21 @@ public interface DataFieldRepository extends JpaRepository<Field, Long> {
 
     Optional<FieldDetailDTO> findDetailById(Long id);
 
+    // en DataReservationRepository (recomendado)
     @Query("""
-    select hour(r.startDateTime)
-    from Reservation r
-    where r.field = :field
-      and date(r.startDateTime) = :date
+  select r.startDateTime
+  from Reservation r
+  where r.field = :field
+    and r.startDateTime >= :start
+    and r.startDateTime < :end
+    and r.status = 'CONFIRMED'
 """)
-    List<Integer> findBookedStartTimesForDate(
+    List<LocalDateTime> findBookedStartDateTimesBetween(
             @Param("field") Field field,
-            @Param("date") LocalDate date
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
     );
+
 
 
 

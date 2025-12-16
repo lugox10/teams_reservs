@@ -1,6 +1,7 @@
 package com.lugo.teams.reservs.application.service;
 
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
+import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,4 +27,6 @@ public interface OwnerDashboardService {
      * Métricas rápidas: reservas totales, ocupación promedio, ingresos.
      */
     Map<String, Object> getOwnerOverviewMetrics(Long ownerId, LocalDate from, LocalDate to);
+
+    Long getOwnerIdFromAuth(Authentication auth);
 }
