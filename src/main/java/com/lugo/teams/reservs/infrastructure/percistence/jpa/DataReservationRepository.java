@@ -49,5 +49,6 @@ public interface DataReservationRepository extends JpaRepository<Reservation, Lo
     List<Reservation> findByVenueUpcoming(@Param("venueId") Long venueId,
                                           @Param("from") LocalDateTime from);
 
+    List<Reservation> findByUserNameAndStartDateTimeBetween(String userName, LocalDateTime from, LocalDateTime to);
 
 }

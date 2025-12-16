@@ -15,6 +15,9 @@ public interface OwnerRepository {
     Optional<Owner> findByUserId(Long userId);
 
     boolean existsByEmail(String email);
+
+
+    Optional<Owner> findByBusinessNameOrNameOrEmail(String login, String login1, String login2);
 }
 
 

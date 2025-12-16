@@ -9,6 +9,7 @@ import com.lugo.teams.reservs.shared.exception.BadRequestException;
 import com.lugo.teams.reservs.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
     private final ReservationMapper reservationMapper;
+    private final ReservUserRepository reservUserRepository;
 
     // ===================== PUBLIC API =====================
 
@@ -122,6 +124,41 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
 
         return metrics;
     }
+
+    @Override
+    public Long getOwnerIdFromAuth(Authentication auth) {
+        if (auth == null || auth.getName() == null) {
+            throw new BadRequestException("Authentication inválido");
+        }
+
+        String login = auth.getName().trim();
+        log.debug("getOwnerIdFromAuth -> login: {}", login);
+
+        // 1) Intento directo por businessName OR name OR email (insensible a mayúsculas)
+        Optional<Owner> maybeOwner = ownerRepository.findByBusinessNameOrNameOrEmail(login, login, login);
+
+        if (maybeOwner.isPresent()) {
+            return maybeOwner.get().getId();
+        }
+
+        // 2) Intento por ReservUser vinculado (username/email -> ReservUser -> Owner.user)
+        Optional<ReservUser> maybeUser = reservUserRepository.findByUsernameOrEmailOrIdentification(
+                login, login, login
+        );
+        if (maybeUser.isPresent()) {
+            Optional<Owner> ownerByUser = ownerRepository.findByBusinessNameOrNameOrEmail(login, login, login);
+            if (ownerByUser.isPresent()) {
+                return ownerByUser.get().getId();
+            }
+        }
+
+        // 3) Si nada, error claro
+        throw new NotFoundException("Owner no encontrado para businessName, name, email o usuario: " + login);
+    }
+
+
+
+
 
     // ===================== HELPERS =====================
 

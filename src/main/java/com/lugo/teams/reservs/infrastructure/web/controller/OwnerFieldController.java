@@ -23,6 +23,7 @@ public class OwnerFieldController {
 
     private final FieldService fieldService;
 
+    // LISTAR
     @GetMapping
     public String list(@PathVariable Long venueId, Model model) {
         model.addAttribute("fields", fieldService.findByVenueId(venueId));
@@ -30,6 +31,7 @@ public class OwnerFieldController {
         return "dashboard/owner/fields";
     }
 
+    // FORM NUEVO
     @GetMapping("/new")
     public String newForm(@PathVariable Long venueId, Model model) {
         FieldRequestDTO dto = new FieldRequestDTO();
@@ -43,12 +45,13 @@ public class OwnerFieldController {
         return "dashboard/owner/field-form";
     }
 
+    // CREAR
     @PostMapping
     public String create(@PathVariable Long venueId,
                          @Valid @ModelAttribute("field") FieldRequestDTO dto,
                          BindingResult br,
-                         RedirectAttributes ra,
-                         Model model) {
+                         Model model,
+                         RedirectAttributes ra) {
 
         if (br.hasErrors()) {
             model.addAttribute("fieldTypes", FieldType.values());
@@ -63,3 +66,4 @@ public class OwnerFieldController {
         return "redirect:/dashboard/owner/venues/" + venueId + "/fields";
     }
 }
+

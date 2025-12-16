@@ -20,5 +20,6 @@ public interface ReservationRepository {
 
     List<Reservation> findUpcomingByUser(String userName, LocalDateTime from, Pageable pageable);
     List<Reservation> findByVenueUpcoming(Long venueId, LocalDateTime from);
+    List<Reservation> findByUserNameAndStartDateTimeBetween(String userName, LocalDateTime from, LocalDateTime to);
 
 }

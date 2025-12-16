@@ -1,15 +1,16 @@
 package com.lugo.teams.reservs.application.dto.reserv;
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
-import jakarta.validation.constraints.AssertTrue;
+import java.time.Duration;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
- * Reglas:
- * - fieldId es obligatorio.
- * - Debe proporcionarse EITHER timeSlotId OR (startDateTime y endDateTime).
- * - durationMinutes entre 1 y 60 si se envía.
- * - playersCount mínimo 1.
+ * DTO con validaciones adicionales:
+ * - bloques de hora (minutos y segundos = 0)
+ * - durationMinutes múltiplo de 60 y entre 60 y 120 (max 2h por reserva)
+ * - cross-field checks (timeSlotId OR start+end)
  */
 @Data
 @NoArgsConstructor
@@ -27,13 +28,20 @@ public class ReservationRequestDTO {
 
     private Long timeSlotId;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime startDateTime;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime endDateTime;
 
-    // nueva duración (minutos)
-    @Min(value = 1, message = "durationMinutes mínimo 1")
-    @Max(value = 60, message = "durationMinutes máximo 60")
-    private Integer durationMinutes;
+    /**
+     * Duración en minutos de la reserva solicitada.
+     * Restricción: 60 (1h) hasta 120 (2h) por reserva.
+     * Si no proporcionas durationMinutes, se inferirá de start/end.
+     */
+    @Min(value = 60, message = "durationMinutes mínimo 60")
+    @Max(value = 120, message = "durationMinutes máximo 120")
+    private Integer durationMinutes = 60;
 
     @Min(value = 1, message = "playersCount mínimo 1")
     private Integer playersCount = 1;
@@ -43,19 +51,39 @@ public class ReservationRequestDTO {
 
     private boolean createTeamsMatch = false;
 
-    // guest fields (si reserva como invitado)
     private String guestName;
     private String guestPhone;
     private String guestEmail;
 
-    /**
-     * Validación cross-field: se exige que el request traiga EITHER timeSlotId OR start+end.
-     * Esto evita reglas complejas en el controller; si quieres externalizar a un Validator
-     * personalizado lo hacemos sin drama.
-     */
     @AssertTrue(message = "Debe proporcionar timeSlotId o startDateTime y endDateTime")
     private boolean isTimeSpecificationValid() {
         if (this.timeSlotId != null) return true;
         return this.startDateTime != null && this.endDateTime != null;
+    }
+
+    @AssertTrue(message = "startDateTime debe ser anterior a endDateTime")
+    private boolean isStartBeforeEnd() {
+        if (this.startDateTime == null || this.endDateTime == null) return true;
+        return this.startDateTime.isBefore(this.endDateTime);
+    }
+
+    @AssertTrue(message = "startDateTime y endDateTime deben estar en inicio de hora (minutos=0, segundos=0)")
+    private boolean isOnHourBoundary() {
+        if (this.startDateTime == null || this.endDateTime == null) return true;
+        return this.startDateTime.getMinute() == 0 && this.startDateTime.getSecond() == 0
+                && this.endDateTime.getMinute() == 0 && this.endDateTime.getSecond() == 0;
+    }
+
+    @AssertTrue(message = "La duración debe coincidir con endDateTime - startDateTime")
+    private boolean isDurationConsistent() {
+        if (this.startDateTime == null || this.endDateTime == null) return true;
+        long diffMin = Duration.between(this.startDateTime, this.endDateTime).toMinutes();
+        return this.durationMinutes != null && diffMin == this.durationMinutes;
+    }
+
+    @AssertTrue(message = "durationMinutes debe ser múltiplo de 60 (bloques de 1 hora)")
+    private boolean isDurationWithinHourBlocks() {
+        if (this.durationMinutes == null) return true;
+        return this.durationMinutes % 60 == 0;
     }
 }

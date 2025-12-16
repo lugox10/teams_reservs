@@ -63,4 +63,9 @@ public class JpaReservationRepositoryAdapter implements ReservationRepository {
     public List<Reservation> findByVenueUpcoming(Long venueId, LocalDateTime from) {
         return repo.findByVenueUpcoming(venueId, from);
     }
+
+    @Override
+    public List<Reservation> findByUserNameAndStartDateTimeBetween(String userName, LocalDateTime from, LocalDateTime to) {
+        return repo.findByUserNameAndStartDateTimeBetween(userName, from, to);
+    }
 }

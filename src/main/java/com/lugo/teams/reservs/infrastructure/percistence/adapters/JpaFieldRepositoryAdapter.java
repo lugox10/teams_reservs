@@ -6,6 +6,7 @@ import com.lugo.teams.reservs.infrastructure.percistence.jpa.DataFieldRepository
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
@@ -49,10 +50,12 @@ public class JpaFieldRepositoryAdapter implements FieldRepository {
 
     @Override
     public List<LocalTime> findBookedStartTimesForDate(Field field, LocalDate date) {
-        return repo.findBookedStartTimesForDate(field, date).stream()
-                .map(hour -> LocalTime.of(hour, 0))
-                .toList();
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = start.plusDays(1);
+        List<LocalDateTime> booked = repo.findBookedStartDateTimesBetween(field, start, end);
+        return booked.stream().map(LocalDateTime::toLocalTime).toList();
     }
+
 
 
 }
