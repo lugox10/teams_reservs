@@ -11,13 +11,13 @@ import com.lugo.teams.reservs.application.mapper.TeamsMatchMapper;
 import com.lugo.teams.reservs.domain.model.Payment;
 import com.lugo.teams.reservs.domain.model.Reservation;
 import com.lugo.teams.reservs.domain.model.ReservationStatus;
-import com.lugo.teams.reservs.domain.model.TimeSlot;
+
 import com.lugo.teams.reservs.domain.model.Field;
 import com.lugo.teams.reservs.domain.model.PaymentStatus;
 import com.lugo.teams.reservs.domain.model.ReservUser;
 import com.lugo.teams.reservs.domain.repository.ReservationRepository;
 import com.lugo.teams.reservs.domain.repository.FieldRepository;
-import com.lugo.teams.reservs.domain.repository.TimeSlotRepository;
+
 import com.lugo.teams.reservs.domain.repository.PaymentRepository;
 import com.lugo.teams.reservs.domain.repository.ReservationTeamLinkRepository;
 import com.lugo.teams.reservs.domain.repository.ReservUserRepository;
@@ -30,6 +30,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +56,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepo;
     private final FieldRepository fieldRepo;
-    private final TimeSlotRepository timeSlotRepo;
+
     private final PaymentRepository paymentRepo;
     private final ReservationTeamLinkRepository reservationTeamLinkRepo;
     private final ReservUserRepository reservUserRepo;
@@ -78,7 +80,7 @@ public class ReservationServiceImpl implements ReservationService {
         if (request == null) throw new BadRequestException("request es requerido");
         if (request.getFieldId() == null) throw new BadRequestException("fieldId es requerido");
 
-        // --- 1) Cargar Field y configuración básica ---
+        // 1) Cargar Field y configuración básica
         Long fieldId = request.getFieldId();
         Field field = fieldRepo.findById(fieldId)
                 .orElseThrow(() -> new NotFoundException("Field no encontrado: " + fieldId));
@@ -88,133 +90,104 @@ public class ReservationServiceImpl implements ReservationService {
         int openHour = (field.getOpenHour() != null) ? field.getOpenHour() : 6;
         int closeHour = (field.getCloseHour() != null) ? field.getCloseHour() : 23;
 
-        // --- 2) Resolver timeslot / start / end ---
-        TimeSlot timeSlot = null;
-        LocalDateTime start;
+        // 2) Resolver start / end según request (ya no hay timeSlot)
+        LocalDateTime start = request.getStartDateTime();
+        if (start == null) throw new BadRequestException("startDateTime es requerido");
+
         LocalDateTime end;
-
-        if (request.getTimeSlotId() != null) {
-            timeSlot = timeSlotRepo.findById(request.getTimeSlotId())
-                    .orElseThrow(() -> new NotFoundException("TimeSlot no encontrado: " + request.getTimeSlotId()));
-            // ensure timeslot belongs to the requested field
-            if (timeSlot.getField() == null || !Objects.equals(timeSlot.getField().getId(), fieldId)) {
-                throw new BadRequestException("El timeSlot no pertenece al field indicado");
+        Integer duration = request.getDurationMinutes();
+        if (duration != null) {
+            if (duration < slotMinutes) throw new BadRequestException("durationMinutes debe ser >= slotMinutes");
+            if (duration % slotMinutes != 0) {
+                throw new BadRequestException("durationMinutes debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
             }
-            long tsMins = Duration.between(timeSlot.getStartDateTime(), timeSlot.getEndDateTime()).toMinutes();
-            if (tsMins % slotMinutes != 0) {
-                throw new BadRequestException("TimeSlot no coincide con la duración de slot del campo");
-            }
-            if (tsMins > 24 * 60) throw new BadRequestException("TimeSlot inválido (demasiado largo)");
-            if (!timeSlot.isAvailable()) throw new ConflictException("TimeSlot bloqueado por el owner");
-
-            start = timeSlot.getStartDateTime();
-            end = timeSlot.getEndDateTime();
+            end = start.plusMinutes(duration.longValue());
         } else {
-            // start provided in request
-            start = request.getStartDateTime();
-            if (start == null) throw new BadRequestException("startDateTime es requerido si no se usa timeSlot");
-
-            // duration from request or endDateTime
-            Integer duration = request.getDurationMinutes();
-            if (duration != null) {
-                if (duration < slotMinutes) throw new BadRequestException("durationMinutes debe ser >= slotMinutes");
-                if (duration % slotMinutes != 0) {
-                    throw new BadRequestException("durationMinutes debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
-                }
-                end = start.plusMinutes(duration.longValue());
-            } else {
-                end = request.getEndDateTime();
-                if (end == null) throw new BadRequestException("endDateTime es requerido si no se usa durationMinutes ni timeSlot");
-                long minutes = Duration.between(start, end).toMinutes();
-                if (minutes <= 0) throw new BadRequestException("endDateTime debe ser posterior a startDateTime");
-                if (minutes % slotMinutes != 0) {
-                    throw new BadRequestException("La duración entre start y end debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
-                }
-                duration = (int) minutes;
+            end = request.getEndDateTime();
+            if (end == null) throw new BadRequestException("endDateTime es requerido si no se usa durationMinutes");
+            long minutes = Duration.between(start, end).toMinutes();
+            if (minutes <= 0) throw new BadRequestException("endDateTime debe ser posterior a startDateTime");
+            if (minutes % slotMinutes != 0) {
+                throw new BadRequestException("La duración entre start y end debe ser múltiplo de slotMinutes (" + slotMinutes + ")");
             }
+            duration = (int) Duration.between(start, end).toMinutes();
         }
 
-        // --- 3) Validaciones temporales básicas ---
+        // 3) Validaciones temporales básicas
         if (!start.isBefore(end)) throw new BadRequestException("startDateTime debe ser anterior a endDateTime");
-
-        // validar alineamiento a la granularidad del campo (por ejemplo, si slotMinutes=60 -> minutes==0)
         if (start.getMinute() % slotMinutes != 0 || end.getMinute() % slotMinutes != 0) {
             throw new BadRequestException("start/end deben alinearse a la granularidad del slot (" + slotMinutes + " minutos)");
         }
-
-        // interpretar closeHour como límite exclusivo: última hora de inicio permitida < closeHour
-        // permitimos que end == closeHour:00, pero no que end > closeHour:00
-        int startHour = start.getHour();
-        int endHour = end.getHour();
-        if (startHour < openHour || end.isAfter(LocalDateTime.of(end.toLocalDate(), LocalTime.of(closeHour, 0)))) {
+        if (start.getHour() < openHour || end.isAfter(LocalDateTime.of(end.toLocalDate(), LocalTime.of(closeHour, 0)))) {
             throw new BadRequestException(String.format("Reserva fuera del horario operativo del campo (open=%d, close=%d)", openHour, closeHour));
         }
 
-        // --- 4) playersCount / capacity ---
+        // 4) playersCount / capacity
         int playersCount = (request.getPlayersCount() == null) ? 1 : request.getPlayersCount();
         if (field.getCapacityPlayers() != null && playersCount > field.getCapacityPlayers()) {
             throw new ConflictException(String.format("playersCount (%d) excede la capacidad del campo (%d)", playersCount, field.getCapacityPlayers()));
         }
 
-        // --- 5) Comprobar solapamientos en la misma cancha ---
+        // 5) Comprobar solapamientos en la misma cancha
         long overlapping = reservationRepo.countOverlappingReservations(fieldId, start, end);
         if (overlapping > 0) {
             meterRegistry.counter("reservation.conflict").increment();
             throw new ConflictException("Ya existe una reserva solapada en ese horario");
         }
 
-        // --- 6) Regla de negocio: máximo 2 horas por día por usuario ---
-        // Solo aplicamos esta regla si request trae userName (usuario autenticado). Si es guest, no aplicamos.
+        // 6) Regla: máximo 2 horas por día por usuario (si viene userName)
         String requestUserName = request.getUserName();
         if (requestUserName != null && !requestUserName.isBlank()) {
             LocalDate reservationDate = start.toLocalDate();
             LocalDateTime dayStart = reservationDate.atStartOfDay();
             LocalDateTime dayEnd = dayStart.plusDays(1);
+            List<Reservation> existing =
+                    reservationRepo.findByUserNameOrderByStartDateTimeDesc(requestUserName)
+                            .stream()
+                            .filter(r ->
+                                    !r.getStartDateTime().isBefore(dayStart) &&
+                                            r.getStartDateTime().isBefore(dayEnd)
+                            )
+                            .toList();
 
-            // **REQUIERE** que tu reservationRepo tenga un método que traiga reservas del usuario en rango:
-            // List<Reservation> findByUserNameAndStartDateTimeBetween(String userName, LocalDateTime from, LocalDateTime to);
-            List<Reservation> existing = reservationRepo.findByUserNameAndStartDateTimeBetween(requestUserName, dayStart, dayEnd);
 
             long existingMinutes = existing.stream()
-                    .filter(r -> r.getStatus() != ReservationStatus.CANCELLED) // ajustar según tu enum/status
+                    .filter(r -> r.getStatus() != ReservationStatus.CANCELLED)
                     .mapToLong(r -> Duration.between(r.getStartDateTime(), r.getEndDateTime()).toMinutes())
                     .sum();
-
             long newMinutes = Duration.between(start, end).toMinutes();
-            if (existingMinutes + newMinutes > 120) { // 2 horas = 120 min
+            if (existingMinutes + newMinutes > 120) {
                 throw new BadRequestException("Ya tienes reservado más de 2 horas en esa fecha. Máximo permitido por día: 2 horas.");
             }
         }
 
-        // --- 7) Crear entidad, rellenar campos y denormalizaciones ---
-        Reservation entity = reservationMapper.toEntity(request, field, timeSlot); // tu mapper
+        // 7) Crear entidad y calcular totalAmount (sin timeSlot)
+        Reservation entity = reservationMapper.toEntity(request, field);
         entity.setStartDateTime(start);
         entity.setEndDateTime(end);
         entity.setDurationMinutes((int) Duration.between(start, end).toMinutes());
         entity.setPlayersCount(playersCount);
 
-        if (field.getVenue() != null && field.getVenue().getId() != null) {
-            entity.setVenueId(field.getVenue().getId());
+        if (field.getVenue() != null) {
+            entity.setVenue(field.getVenue()); // ✅ seteamos el objeto completo
         }
 
         if (entity.getStatus() == null) entity.setStatus(ReservationStatus.PENDING);
         if (entity.getPaymentStatus() == null) entity.setPaymentStatus(PaymentStatus.NOT_INITIATED);
 
-        // calcular totalAmount
+        // calcular totalAmount usando pricePerHour del campo
         BigDecimal total = null;
         long minutes = Duration.between(start, end).toMinutes();
         double hours = minutes / 60.0;
-        if (timeSlot != null && timeSlot.getPriceOverride() != null) {
-            total = timeSlot.getPriceOverride().multiply(BigDecimal.valueOf(hours));
-        } else if (field.getPricePerHour() != null) {
+        if (field.getPricePerHour() != null) {
             total = field.getPricePerHour().multiply(BigDecimal.valueOf(hours));
         }
         if (total != null) entity.setTotalAmount(total);
 
-        // vincular ReservUser o guest según request (tu método existente)
+        // vincular ReservUser o guest
         attachUserOrGuest(entity, request);
 
-        // --- 8) Persistir ---
+        // 8) Persistir
         Reservation saved = reservationRepo.save(entity);
         meterRegistry.counter("reservation.created").increment();
 
@@ -224,13 +197,12 @@ public class ReservationServiceImpl implements ReservationService {
                 saved.getField().getId(), saved.getStartDateTime(), saved.getEndDateTime());
 
         eventPublisher.publishEvent(new ReservationCreatedEvent(this, saved.getId()));
-
         return reservationMapper.toDTO(saved);
     }
 
 
 
-    // ---------------------- UPDATE ----------------------
+
     @Override
     @Transactional
     public ReservationResponseDTO updateReservation(Long id, ReservationRequestDTO dto) {
@@ -240,41 +212,23 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation existing = reservationRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Reserva no encontrada: " + id));
 
-        // resolver field/timeSlot si vienen en DTO (si no, usamos los actuales)
         Field newField = (dto.getFieldId() != null) ?
                 fieldRepo.findById(dto.getFieldId())
                         .orElseThrow(() -> new NotFoundException("Field no encontrado: " + dto.getFieldId()))
                 : existing.getField();
 
-        TimeSlot timeSlot = (dto.getTimeSlotId() != null) ?
-                timeSlotRepo.findById(dto.getTimeSlotId())
-                        .orElseThrow(() -> new NotFoundException("TimeSlot no encontrado: " + dto.getTimeSlotId()))
-                : existing.getTimeSlot();
+        LocalDateTime newStart = dto.getStartDateTime() != null ? dto.getStartDateTime() : existing.getStartDateTime();
 
-        if (timeSlot != null) {
-            long tsMins = Duration.between(timeSlot.getStartDateTime(), timeSlot.getEndDateTime()).toMinutes();
-            if (tsMins > 60) throw new BadRequestException("El timeSlot seleccionado supera los 60 minutos");
-        }
-
-        LocalDateTime newStart;
+        Integer duration = dto.getDurationMinutes();
         LocalDateTime newEnd;
-
-        if (timeSlot != null) {
-            newStart = timeSlot.getStartDateTime();
-            newEnd = timeSlot.getEndDateTime();
+        if (duration != null) {
+            if (duration < 1) throw new BadRequestException("durationMinutes debe ser >= 1");
+            if (newStart == null) throw new BadRequestException("No hay startDateTime para aplicar durationMinutes");
+            newEnd = newStart.plusMinutes(duration.longValue());
+        } else if (dto.getEndDateTime() != null) {
+            newEnd = dto.getEndDateTime();
         } else {
-            newStart = dto.getStartDateTime() != null ? dto.getStartDateTime() : existing.getStartDateTime();
-
-            Integer duration = dto.getDurationMinutes();
-            if (duration != null) {
-                if (duration < 1 || duration > 60) throw new BadRequestException("durationMinutes debe estar entre 1 y 60");
-                if (newStart == null) throw new BadRequestException("No hay startDateTime para aplicar durationMinutes");
-                newEnd = newStart.plusMinutes(duration.longValue());
-            } else if (dto.getEndDateTime() != null) {
-                newEnd = dto.getEndDateTime();
-            } else {
-                newEnd = existing.getEndDateTime();
-            }
+            newEnd = existing.getEndDateTime();
         }
 
         validateTimeBounds(newStart, newEnd);
@@ -282,7 +236,6 @@ public class ReservationServiceImpl implements ReservationService {
         Integer playersCount = dto.getPlayersCount() != null ? dto.getPlayersCount() : existing.getPlayersCount();
         validateCapacity(playersCount, newField);
 
-        // comprobar solapamientos ignorando la propia reserva
         List<Reservation> overlaps = reservationRepo.findOverlappingReservations(newField.getId(), newStart, newEnd);
         boolean hasConflict = overlaps.stream().anyMatch(r -> !r.getId().equals(existing.getId()));
         if (hasConflict) {
@@ -290,21 +243,17 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ConflictException("Horario solapa con otra reserva");
         }
 
-        // aplicar cambios via mapper (mantiene campos que no queremos perder)
-        reservationMapper.updateEntityFromRequest(existing, dto, newField, timeSlot);
+        // actualizar entidad vía mapper (sin TimeSlot)
+        reservationMapper.updateEntityFromRequest(existing, dto, newField);
 
-        // ajustar start/end y playersCount
         existing.setStartDateTime(newStart);
         existing.setEndDateTime(newEnd);
         existing.setPlayersCount(playersCount);
 
-        // manejar enlace user <-> guest según DTO
         if (dto.getUserId() != null || dto.getGuestName() != null || dto.getGuestEmail() != null) {
-            // prioridad: si viene userId, asociar usuario; si no, si vienen datos de guest, desvincular user y usar guest.
             if (dto.getUserId() != null) {
                 attachUserById(existing, dto.getUserId());
             } else {
-                // si vienen datos de guest, desvincular user
                 detachUserToGuestIfNeeded(existing, dto);
             }
         }
@@ -318,6 +267,7 @@ public class ReservationServiceImpl implements ReservationService {
                 saved.getField().getId(), saved.getStartDateTime(), saved.getEndDateTime());
         return reservationMapper.toDTO(saved);
     }
+
 
     // ---------------------- CONFIRM ----------------------
     @Override
@@ -375,7 +325,16 @@ public class ReservationServiceImpl implements ReservationService {
     public List<ReservationResponseDTO> findUpcomingByVenue(Long venueId) {
         if (venueId == null) throw new BadRequestException("venueId es requerido");
         LocalDateTime from = LocalDateTime.now();
-        var list = reservationRepo.findByVenueUpcoming(venueId, from);
+        Page<Reservation> page = reservationRepo.findByVenueIdsAndDateRange(
+                List.of(venueId),
+                from,
+                from.plusMonths(1),
+                PageRequest.of(0, 50)
+        );
+
+        List<Reservation> list = page.getContent();
+
+
         return list.stream().map(reservationMapper::toDTO).collect(Collectors.toList());
     }
 

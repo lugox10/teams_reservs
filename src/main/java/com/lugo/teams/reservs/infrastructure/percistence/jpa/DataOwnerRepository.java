@@ -18,4 +18,5 @@ public interface DataOwnerRepository extends JpaRepository<Owner, Long> {
 
     Optional<Owner> findByUser(ReservUser user);
 
+
 }

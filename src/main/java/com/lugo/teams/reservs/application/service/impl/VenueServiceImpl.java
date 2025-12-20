@@ -33,24 +33,20 @@ public class VenueServiceImpl implements VenueService {
     private final VenueMapper venueMapper;
     private final MeterRegistry meterRegistry;
 
-    // ================== CREATE ==================
     @Override
     @Transactional
     public VenueResponseDTO createVenue(VenueRequestDTO dto) {
-        if (dto == null) {
-            throw new BadRequestException("VenueRequestDTO es requerido");
-        }
-
-        // aquí asumo que VenueRequestDTO tiene getOwnerId()
-        if (dto.getOwnerId() == null) {
-            throw new BadRequestException("ownerId es requerido");
-        }
+        if (dto == null) throw new BadRequestException("VenueRequestDTO es requerido");
+        if (dto.getOwnerId() == null) throw new BadRequestException("ownerId es requerido");
 
         Owner owner = ownerRepository.findById(dto.getOwnerId())
                 .orElseThrow(() -> new NotFoundException("Owner no encontrado: " + dto.getOwnerId()));
 
         Venue venue = venueMapper.toEntity(dto, owner);
-        Venue saved = venueRepository.save(venue);
+        log.debug("Antes de save - venue nombre={} ownerId={}", venue.getName(), owner.getId());
+
+        // saveAndFlush fuerza el INSERT inmediato (útil para debugging y asegurar commit)
+        Venue saved = venueRepository.saveAndFlush(venue);
 
         meterRegistry.counter("venue.created").increment();
         log.info("Venue creada id={} ownerId={} nombre={}",
@@ -61,33 +57,25 @@ public class VenueServiceImpl implements VenueService {
         return venueMapper.toResponseDTO(saved);
     }
 
-    // ================== UPDATE ==================
     @Override
     @Transactional
     public VenueResponseDTO updateVenue(Long id, VenueRequestDTO dto) {
-        if (id == null) {
-            throw new BadRequestException("id es requerido");
-        }
-        if (dto == null) {
-            throw new BadRequestException("VenueRequestDTO es requerido");
-        }
+        if (id == null) throw new BadRequestException("id es requerido");
+        if (dto == null) throw new BadRequestException("VenueRequestDTO es requerido");
 
         Venue existing = venueRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Venue no encontrada: " + id));
 
+        // buscar owner sólo si viene en DTO y cambia
         Owner owner = null;
-        // solo buscamos owner si viene en el DTO; si no, dejamos el actual
-        if (dto.getOwnerId() != null &&
-                (existing.getOwner() == null || !dto.getOwnerId().equals(existing.getOwner().getId()))) {
-
+        if (dto.getOwnerId() != null && (existing.getOwner() == null || !dto.getOwnerId().equals(existing.getOwner().getId()))) {
             owner = ownerRepository.findById(dto.getOwnerId())
                     .orElseThrow(() -> new NotFoundException("Owner no encontrado: " + dto.getOwnerId()));
         }
 
-        // delegamos a mapper la actualización parcial
         venueMapper.updateEntityFromRequest(existing, dto, owner);
 
-        Venue saved = venueRepository.save(existing);
+        Venue saved = venueRepository.saveAndFlush(existing);
         meterRegistry.counter("venue.updated").increment();
 
         log.info("Venue actualizada id={} nombre={} active={}",
@@ -96,33 +84,29 @@ public class VenueServiceImpl implements VenueService {
         return venueMapper.toResponseDTO(saved);
     }
 
-    // ================== FIND BY ID ==================
     @Override
     public Optional<VenueResponseDTO> findById(Long id) {
-        if (id == null) {
-            throw new BadRequestException("id es requerido");
-        }
+        if (id == null) throw new BadRequestException("id es requerido");
         return venueRepository.findById(id).map(venueMapper::toResponseDTO);
     }
 
-    // ================== FIND BY OWNER ==================
-// FIND BY OWNER -> devuelve lista de resumen (VenueListDTO)
     @Override
     public List<VenueListDTO> findByOwnerId(Long ownerId) {
-        if (ownerId == null) {
-            throw new BadRequestException("ownerId es requerido");
-        }
+        if (ownerId == null) throw new BadRequestException("ownerId es requerido");
         List<Venue> venues = venueRepository.findByOwnerId(ownerId);
-        return venueMapper.toResponseDTOList(venues); // List<VenueListDTO>
+        return venueMapper.toListDTO(venues);
     }
 
-    // FIND ACTIVE -> también debe devolver lista de resumen (VenueListDTO)
     @Override
     public List<VenueResponseDTO> findActive() {
         List<Venue> venues = venueRepository.findByActiveTrue();
-        return venues.stream().map(venueMapper::toResponseDTO).collect(Collectors.toList()); // map a detalle por item
+        return venues.stream().map(venueMapper::toResponseDTO).collect(Collectors.toList());
     }
 
-
+    @Override
+    public List<Venue> findEntitiesByOwnerId(Long ownerId) {
+        if (ownerId == null) throw new IllegalArgumentException("ownerId es requerido");
+        return venueRepository.findByOwnerId(ownerId);
+    }
 
 }

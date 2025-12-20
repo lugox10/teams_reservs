@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.security.Principal;
 import java.util.List;
 
+/**
+ * Dashboard del usuario (vistas Thymeleaf).
+ * GET /dashboard/user
+ */
 @Controller
 @RequestMapping("/dashboard/user")
 @RequiredArgsConstructor
@@ -21,7 +25,7 @@ public class UserDashboardController {
     private final ReservUserService userService;
     private final ReservationService reservationService;
 
-    @GetMapping
+    @GetMapping({"", "/"})
     public String overview(Principal principal, Model model) {
         if (principal == null) {
             return "redirect:/teams-reservs/login";
@@ -39,4 +43,15 @@ public class UserDashboardController {
 
         return "dashboard/user";
     }
+
+    @GetMapping("/dashboard/user")
+    public String dashboardUser(Model model, Principal principal) {
+        String username = principal.getName();
+        model.addAttribute(
+                "reservations",
+                reservationService.findByUser(username)
+        );
+        return "dashboard/user/index";
+    }
+
 }

@@ -47,8 +47,10 @@ public class Reservation extends BaseEntity {
     /**
      * Campo opcional denormalizado: venue asociado (mejora queries owner->reservations).
      */
-    @Column(name = "venue_id")
-    private Long venueId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "venue_id", nullable = false)
+    private Venue venue;
+
 
     private Long userId; // referencia numérica adicional (opcional)
 
@@ -58,9 +60,8 @@ public class Reservation extends BaseEntity {
     private Field field;
 
     // Timeslot opcional (si estás usando time_slots persistentes)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "time_slot_id")
-    private TimeSlot timeSlot;
+
+
 
     @Column(name = "start_date_time", nullable = false)
     private LocalDateTime startDateTime;

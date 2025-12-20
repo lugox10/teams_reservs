@@ -36,4 +36,14 @@ public class JpaVenueRepositoryAdapter implements VenueRepository {
     public List<Venue> findByActiveTrue() {
         return repo.findByActiveTrue();
     }
+
+    @Override
+    public Venue saveAndFlush(Venue venue) {
+        return repo.saveAndFlush(venue);
+    }
+
+    @Override
+    public int countByOwnerId(Long id) {
+        return repo.countByOwnerId(id);
+    }
 }

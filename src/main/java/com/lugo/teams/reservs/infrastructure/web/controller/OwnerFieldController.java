@@ -1,9 +1,9 @@
 package com.lugo.teams.reservs.infrastructure.web.controller;
 
-import com.lugo.teams.reservs.application.dto.field.FieldDetailDTO;
 import com.lugo.teams.reservs.application.dto.field.FieldRequestDTO;
-
+import com.lugo.teams.reservs.application.dto.venue.VenueResponseDTO;
 import com.lugo.teams.reservs.application.service.FieldService;
+import com.lugo.teams.reservs.application.service.VenueService;
 import com.lugo.teams.reservs.domain.model.FieldType;
 import com.lugo.teams.reservs.domain.model.SurfaceType;
 import jakarta.validation.Valid;
@@ -14,30 +14,46 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
-
+/**
+ * Gestión de canchas por owner
+ * Rutas base:
+ * /dashboard/owner/venues/{venueId}/fields
+ */
 @Controller
 @RequestMapping("/dashboard/owner/venues/{venueId}/fields")
 @RequiredArgsConstructor
 public class OwnerFieldController {
 
     private final FieldService fieldService;
+    private final VenueService venueService;
 
-    // LISTAR
+    /**
+     * LISTADO DE CANCHAS
+     */
     @GetMapping
     public String list(@PathVariable Long venueId, Model model) {
+
+        VenueResponseDTO venue = venueService.findById(venueId)
+                .orElseThrow(() -> new IllegalArgumentException("Venue no encontrado: " + venueId));
+
+        model.addAttribute("venue", venue);
         model.addAttribute("fields", fieldService.findByVenueId(venueId));
         model.addAttribute("venueId", venueId);
+
         return "dashboard/owner/fields";
     }
 
-    // FORM NUEVO
+    /**
+     * FORMULARIO NUEVA CANCHA
+     */
     @GetMapping("/new")
     public String newForm(@PathVariable Long venueId, Model model) {
-        FieldRequestDTO dto = new FieldRequestDTO();
-        dto.setVenueId(venueId);
 
-        model.addAttribute("field", dto);
+        VenueResponseDTO venue = venueService.findById(venueId)
+                .orElseThrow(() -> new IllegalArgumentException("Venue no encontrado: " + venueId));
+
+        model.addAttribute("venue", venue);
+        model.addAttribute("field", new FieldRequestDTO());
         model.addAttribute("venueId", venueId);
         model.addAttribute("fieldTypes", FieldType.values());
         model.addAttribute("surfaceTypes", SurfaceType.values());
@@ -45,7 +61,9 @@ public class OwnerFieldController {
         return "dashboard/owner/field-form";
     }
 
-    // CREAR
+    /**
+     * CREAR CANCHA
+     */
     @PostMapping
     public String create(@PathVariable Long venueId,
                          @Valid @ModelAttribute("field") FieldRequestDTO dto,
@@ -53,17 +71,20 @@ public class OwnerFieldController {
                          Model model,
                          RedirectAttributes ra) {
 
+        VenueResponseDTO venue = venueService.findById(venueId)
+                .orElseThrow(() -> new IllegalArgumentException("Venue no encontrado: " + venueId));
+
         if (br.hasErrors()) {
+            model.addAttribute("venue", venue);
+            model.addAttribute("venueId", venueId);
             model.addAttribute("fieldTypes", FieldType.values());
             model.addAttribute("surfaceTypes", SurfaceType.values());
             return "dashboard/owner/field-form";
         }
 
-        dto.setVenueId(venueId);
-        fieldService.createField(dto);
+        fieldService.createField(venueId, dto);
 
         ra.addFlashAttribute("success", "Cancha creada correctamente");
         return "redirect:/dashboard/owner/venues/" + venueId + "/fields";
     }
 }
-

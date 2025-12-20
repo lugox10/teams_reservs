@@ -62,6 +62,11 @@ public class JpaReservUserRepositoryAdapter implements ReservUserRepository {
     }
 
     @Override
+    public boolean existsByUsernameOrEmail(String username, String email) {
+        return repo.existsByUsernameOrEmail(username, email);
+    }
+
+    @Override
     public Optional<ReservUser> findByUsername(String username) {
         return repo.findByUsername(username);
     }

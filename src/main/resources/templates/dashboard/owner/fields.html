@@ -1,4 +1,3 @@
-<!-- src/main/resources/templates/dashboard/owner/fields.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -30,17 +29,19 @@
         </tr>
         </thead>
         <tbody>
+
         <tr th:each="field : ${fields}">
-            <td th:text="${field.name}">Cancha 1</td>
-            <td th:text="${field.modality}">Fútbol 7</td>
-            <td th:text="${field.surfaceType}">Sintética</td>
-            <td th:text="${field.maxPlayers}">14</td>
+            <td th:text="${field.name}">Cancha</td>
+            <td th:text="${field.fieldType}">F7</td>
+            <td th:text="${field.surface}">Sintética</td>
+            <td th:text="${field.capacityPlayers}">14</td>
             <td>$ <span th:text="${field.pricePerHour}">0</span></td>
         </tr>
 
         <tr th:if="${#lists.isEmpty(fields)}">
             <td colspan="5">Este complejo aún no tiene canchas.</td>
         </tr>
+
         </tbody>
     </table>
 

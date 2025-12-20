@@ -25,7 +25,7 @@ public class OwnerRequestDTO {
     private String email;
 
     @NotBlank(message = "password es obligatorio")
-    @Size(min = 8, message = "password mínimo 8 caracteres")
+    @Size(min = 8, message = "password mínimo 4 caracteres")
     private String password;      // texto plano aquí — hashear en service
 
     @NotBlank(message = "name (nombre del negocio) es obligatorio")

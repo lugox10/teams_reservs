@@ -70,7 +70,5 @@ public class Field extends BaseEntity {
     @JoinColumn(name = "venue_id")
     private Venue venue;
 
-    @OneToMany(mappedBy = "field", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<TimeSlot> timeSlots = new ArrayList<>();
+
 }

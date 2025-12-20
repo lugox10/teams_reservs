@@ -3,14 +3,18 @@ package com.lugo.teams.reservs.application.service.impl;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
 import com.lugo.teams.reservs.application.mapper.ReservationMapper;
 import com.lugo.teams.reservs.application.service.OwnerDashboardService;
+import com.lugo.teams.reservs.application.service.VenueService;
 import com.lugo.teams.reservs.domain.model.*;
 import com.lugo.teams.reservs.domain.repository.*;
 import com.lugo.teams.reservs.shared.exception.BadRequestException;
 import com.lugo.teams.reservs.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Pageable;
+
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -25,7 +29,7 @@ import java.util.stream.Collectors;
 public class OwnerDashboardServiceImpl implements OwnerDashboardService {
 
     private final OwnerRepository ownerRepository;
-    private final VenueRepository venueRepository;
+    private final VenueService venueService;          // <- ahora usamos el servicio
     private final FieldRepository fieldRepository;
     private final ReservationRepository reservationRepository;
     private final PaymentRepository paymentRepository;
@@ -35,62 +39,73 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
     // ===================== PUBLIC API =====================
 
     @Override
-    public List<ReservationResponseDTO> findReservationsByOwner(Long ownerId, LocalDate from, LocalDate to) {
-        if (ownerId == null) throw new BadRequestException("ownerId es requerido");
+    public List<ReservationResponseDTO> findReservationsByOwner(
+            Long ownerId,
+            LocalDate from,
+            LocalDate to
+    ) {
+        if (ownerId == null) {
+            throw new BadRequestException("ownerId es requerido");
+        }
 
         Owner owner = ownerRepository.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("Owner no encontrado: " + ownerId));
 
         DateRange range = normalizeRange(from, to);
 
-        List<Reservation> reservations = loadReservationsForOwnerInRange(owner, range);
+        // 1️⃣ venues del owner
+        List<Venue> venues = venueService.findEntitiesByOwnerId(owner.getId());
+        if (venues.isEmpty()) return List.of();
+
+        List<Long> venueIds = venues.stream()
+                .map(Venue::getId)
+                .toList();
+
+        // 2️⃣ buscar reservas DIRECTO por venueId + rango
+        List<Reservation> reservations =
+                reservationRepository.findByVenueIdInAndStartDateTimeBetween(
+                        venueIds,
+                        range.from.atStartOfDay(),
+                        range.to.plusDays(1).atStartOfDay()
+                );
 
         return reservationMapper.toDTOList(reservations);
     }
 
+
     @Override
     public Map<Long, Double> getMonthlyRevenueByVenue(Long ownerId, int year, int month) {
         if (ownerId == null) throw new BadRequestException("ownerId es requerido");
-        if (month < 1 || month > 12) throw new BadRequestException("month debe estar entre 1 y 12");
+        if (month < 1 || month > 12) throw new BadRequestException("month inválido");
 
         Owner owner = ownerRepository.findById(ownerId)
                 .orElseThrow(() -> new NotFoundException("Owner no encontrado: " + ownerId));
 
         LocalDate start = LocalDate.of(year, month, 1);
-        LocalDate endExclusive = start.plusMonths(1);
-        DateRange range = new DateRange(start, endExclusive.minusDays(1)); // inclusivo para cálculo interno
+        LocalDate end = start.plusMonths(1);
 
-        List<Venue> venues = venueRepository.findByOwnerId(owner.getId());
-        if (venues.isEmpty()) return Collections.emptyMap();
+        List<Venue> venues = venueService.findEntitiesByOwnerId(owner.getId());
+        if (venues.isEmpty()) return Map.of();
 
-        // Map<venueId, BigDecimal>
-        Map<Long, BigDecimal> revenueByVenue = new HashMap<>();
+        Map<Long, Double> revenue = new HashMap<>();
 
         for (Venue venue : venues) {
-            List<Field> fields = fieldRepository.findByVenueId(venue.getId());
-            if (fields.isEmpty()) {
-                revenueByVenue.put(venue.getId(), BigDecimal.ZERO);
-                continue;
-            }
+            List<Reservation> reservations =
+                    reservationRepository.findByVenue_IdInAndStatusInAndStartDateTimeBetween(
+                            List.of(venue.getId()),
+                            List.of(ReservationStatus.PENDING, ReservationStatus.CONFIRMED, ReservationStatus.COMPLETED),
+                            start.atStartOfDay(),
+                            end.atStartOfDay(),
+                            Pageable.unpaged() // si no necesitas paginar aquí
+                    ).getContent(); // traemos lista de reservas
 
-            List<Reservation> reservations = new ArrayList<>();
-            for (Field field : fields) {
-                List<Reservation> fieldRes =
-                        reservationRepository.findByFieldIdOrderByStartDateTime(field.getId());
-                reservations.addAll(filterByRange(fieldRes, range));
-            }
-
-            BigDecimal venueRevenue = calculateRevenueForReservations(reservations);
-            revenueByVenue.put(venue.getId(), venueRevenue);
+            BigDecimal total = calculateRevenueForReservations(reservations);
+            revenue.put(venue.getId(), total.doubleValue());
         }
 
-        // Convertimos BigDecimal -> Double para respetar la firma del servicio
-        return revenueByVenue.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().doubleValue()
-                ));
+        return revenue;
     }
+
 
     @Override
     public Map<String, Object> getOwnerOverviewMetrics(Long ownerId, LocalDate from, LocalDate to) {
@@ -100,7 +115,7 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
                 .orElseThrow(() -> new NotFoundException("Owner no encontrado: " + ownerId));
 
         DateRange range = normalizeRange(from, to);
-        List<Venue> venues = venueRepository.findByOwnerId(owner.getId());
+        List<Venue> venues = venueService.findEntitiesByOwnerId(owner.getId()); // <- servicio
         List<Field> fields = venues.isEmpty()
                 ? List.of()
                 : venues.stream()
@@ -120,7 +135,7 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
         metrics.put("to", range.to);
         metrics.put("totalReservations", totalReservations);
         metrics.put("totalRevenue", totalRevenue.doubleValue());
-        metrics.put("occupancyRate", occupancyRate); // 0.0 - 1.0
+        metrics.put("occupancyRate", occupancyRate);
 
         return metrics;
     }
@@ -134,21 +149,21 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
         String login = auth.getName().trim();
         log.debug("getOwnerIdFromAuth -> login: {}", login);
 
-        // 1) Intento directo por businessName OR name OR email (insensible a mayúsculas)
+        // 1) intento directo por businessName OR name OR email (insensible a mayúsculas)
         Optional<Owner> maybeOwner = ownerRepository.findByBusinessNameOrNameOrEmail(login, login, login);
-
         if (maybeOwner.isPresent()) {
             return maybeOwner.get().getId();
         }
 
-        // 2) Intento por ReservUser vinculado (username/email -> ReservUser -> Owner.user)
+        // 2) intento por ReservUser vinculado (username/email -> ReservUser -> Owner.user)
         Optional<ReservUser> maybeUser = reservUserRepository.findByUsernameOrEmailOrIdentification(
                 login, login, login
         );
         if (maybeUser.isPresent()) {
-            Optional<Owner> ownerByUser = ownerRepository.findByBusinessNameOrNameOrEmail(login, login, login);
-            if (ownerByUser.isPresent()) {
-                return ownerByUser.get().getId();
+            Long userId = maybeUser.get().getId();
+            Optional<Owner> ownerByUserId = ownerRepository.findByUserId(userId);
+            if (ownerByUserId.isPresent()) {
+                return ownerByUserId.get().getId();
             }
         }
 
@@ -159,8 +174,41 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
 
 
 
+    @Override
+    public Page<ReservationResponseDTO> findReservationsByOwner(
+            Long ownerId,
+            LocalDate from,
+            LocalDate to,
+            Pageable pageable
+    ) {
+        Owner owner = ownerRepository.findById(ownerId)
+                .orElseThrow(() -> new NotFoundException("Owner no encontrado"));
 
-    // ===================== HELPERS =====================
+        DateRange range = normalizeRange(from, to);
+
+        List<Long> venueIds = venueService.findEntitiesByOwnerId(owner.getId())
+                .stream()
+                .map(Venue::getId)
+                .toList();
+
+        if (venueIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        return reservationRepository
+                .findByVenueIdInAndStartDateTimeBetween(
+                        venueIds,
+                        range.from.atStartOfDay(),
+                        range.to.plusDays(1).atStartOfDay(),
+                        pageable
+                )
+                .map(reservationMapper::toDTO);
+    }
+
+
+
+
+    // ================= HELPERS (sin cambios) =================
 
     private DateRange normalizeRange(LocalDate from, LocalDate to) {
         LocalDate now = LocalDate.now();
@@ -175,32 +223,30 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
         return new DateRange(effectiveFrom, effectiveTo);
     }
 
-    private List<Reservation> loadReservationsForOwnerInRange(Owner owner, DateRange range) {
-        List<Venue> venues = venueRepository.findByOwnerId(owner.getId());
+    private List<Reservation> loadReservationsForOwnerInRange(
+            Owner owner,
+            DateRange range
+    ) {
+        List<Venue> venues = venueService.findEntitiesByOwnerId(owner.getId());
         if (venues.isEmpty()) return List.of();
 
-        List<Reservation> result = new ArrayList<>();
+        List<Long> venueIds = venues.stream()
+                .map(Venue::getId)
+                .toList();
 
-        for (Venue venue : venues) {
-            List<Field> fields = fieldRepository.findByVenueId(venue.getId());
-            for (Field field : fields) {
-                List<Reservation> resByField =
-                        reservationRepository.findByFieldIdOrderByStartDateTime(field.getId());
-                result.addAll(filterByRange(resByField, range));
-            }
-        }
-
-        return result;
+        return reservationRepository.findByVenueIdInAndStartDateTimeBetween(
+                venueIds,
+                range.from.atStartOfDay(),
+                range.to.plusDays(1).atStartOfDay()
+        );
     }
 
-    /**
-     * Filtra reservas por rango usando Reservation.startDateTime (incluye CANCELLED).
-     */
+
     private List<Reservation> filterByRange(List<Reservation> reservations, DateRange range) {
         if (reservations == null || reservations.isEmpty()) return List.of();
 
         LocalDateTime fromDateTime = range.from.atStartOfDay();
-        LocalDateTime toDateTime = range.to.plusDays(1).atStartOfDay(); // [from, to+1) para incluir el día completo
+        LocalDateTime toDateTime = range.to.plusDays(1).atStartOfDay();
 
         return reservations.stream()
                 .filter(r -> {
@@ -212,11 +258,6 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Calcula ingresos basados SOLO en pagos con estado PAID.
-     * - Suma Payment.amount donde Payment.status == PAID y !refund.
-     * - Si no hay payments pero la reserva está PAID y tiene totalAmount, usa totalAmount como fallback.
-     */
     private BigDecimal calculateRevenueForReservations(List<Reservation> reservations) {
         if (reservations == null || reservations.isEmpty()) return BigDecimal.ZERO;
 
@@ -235,7 +276,6 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
                     }
                 }
             } else {
-                // fallback: usar totalAmount si la reserva está marcada como pagada
                 if (reservation.getPaymentStatus() == PaymentStatus.PAID &&
                         reservation.getTotalAmount() != null) {
                     sumForReservation = sumForReservation.add(reservation.getTotalAmount());
@@ -248,19 +288,9 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
         return total;
     }
 
-    /**
-     * Calcula una "ocupación promedio" aproximada:
-     * ocupación = horas_reservadas / horas_disponibles_teóricas
-     *
-     * - horas_reservadas: suma de duración de todas las reservas.
-     * - horas_disponibles_teóricas: (#fields del owner) * horas dentro del rango [from, to].
-     *
-     * Si no hay fields o el rango es raro, devuelve 0.0.
-     */
     private double calculateOccupancyRate(List<Field> fields, List<Reservation> reservations, DateRange range) {
         if (fields == null || fields.isEmpty()) return 0.0;
 
-        // horas reservadas
         long bookedMinutes = reservations.stream()
                 .filter(r -> r.getStartDateTime() != null && r.getEndDateTime() != null)
                 .mapToLong(r -> Duration.between(r.getStartDateTime(), r.getEndDateTime()).toMinutes())
@@ -268,9 +298,8 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
 
         double bookedHours = bookedMinutes / 60.0;
 
-        // horas teóricas disponibles = (#fields) * horas en rango
         LocalDateTime fromDateTime = range.from.atStartOfDay();
-        LocalDateTime toDateTime = range.to.plusDays(1).atStartOfDay(); // incluir último día
+        LocalDateTime toDateTime = range.to.plusDays(1).atStartOfDay();
         long totalMinutesRange = Duration.between(fromDateTime, toDateTime).toMinutes();
         double totalHoursRange = totalMinutesRange / 60.0;
 
@@ -284,6 +313,53 @@ public class OwnerDashboardServiceImpl implements OwnerDashboardService {
         return occupancy;
     }
 
-    // Helper interno para manejar rangos
-    private record DateRange(LocalDate from, LocalDate to) {}
+    private record DateRange(LocalDate from, LocalDate to) {
+
+    }
+
+    @Override
+    public Map<Long, Map<String, Object>> getMetricsByVenue(Long ownerId, LocalDate from, LocalDate to) {
+        List<Venue> venues = venueService.findEntitiesByOwnerId(ownerId);
+        if (venues == null || venues.isEmpty()) return Map.of();
+
+        LocalDate effectiveFrom = (from != null) ? from : LocalDate.now().minusMonths(1);
+        LocalDate effectiveTo = (to != null) ? to : LocalDate.now();
+
+        // traer todas las reservas de una sola vez (por todos los venueIds)
+        List<Long> venueIds = venues.stream().map(Venue::getId).toList();
+        List<Reservation> allReservations = reservationRepository.findByVenueIdInAndStartDateTimeBetween(
+                venueIds,
+                effectiveFrom.atStartOfDay(),
+                effectiveTo.plusDays(1).atStartOfDay()
+        );
+
+        Map<Long, List<Reservation>> reservationsByVenue = allReservations.stream()
+                .filter(r -> r.getVenue() != null && r.getVenue().getId() != null)
+                .collect(Collectors.groupingBy(r -> r.getVenue().getId()));
+
+        Map<Long, Map<String, Object>> result = new LinkedHashMap<>();
+
+        for (Venue v : venues) {
+            Long vid = v.getId();
+            List<Reservation> reservations = reservationsByVenue.getOrDefault(vid, List.of());
+
+            int totalReservations = reservations.size();
+            BigDecimal totalRevenue = calculateRevenueForReservations(reservations);
+
+            List<Field> fields = fieldRepository.findByVenueId(vid);
+            double occupancyRate = calculateOccupancyRate(fields, reservations, new DateRange(effectiveFrom, effectiveTo));
+
+            Map<String, Object> metrics = new HashMap<>();
+            metrics.put("totalReservations", totalReservations);
+            metrics.put("totalRevenue", totalRevenue.doubleValue());
+            metrics.put("occupancyRate", occupancyRate);
+
+            result.put(vid, metrics);
+        }
+
+        return result;
+    }
+
+
+
 }

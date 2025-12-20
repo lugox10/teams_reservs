@@ -64,7 +64,7 @@ public class FieldMapper {
                 .openHour(entity.getOpenHour())
                 .closeHour(entity.getCloseHour())
                 .minBookingHours(entity.getMinBookingHours())
-                .timeSlotsCount(entity.getTimeSlots() != null ? entity.getTimeSlots().size() : 0)
+
                 .build();
         return dto;
     }
@@ -82,6 +82,8 @@ public class FieldMapper {
                 .pricePerHour(entity.getPricePerHour())
                 .firstPhoto(firstPhoto)
                 .slotMinutes(entity.getSlotMinutes())
+                .fieldType(entity.getFieldType())
+                .surface(entity.getSurface())
                 .build();
     }
 
@@ -134,6 +136,23 @@ public class FieldMapper {
         if (req.getOpenHour() != null) target.setOpenHour(req.getOpenHour());
         if (req.getCloseHour() != null) target.setCloseHour(req.getCloseHour());
         if (req.getMinBookingHours() != null) target.setMinBookingHours(req.getMinBookingHours());
+    }
+    public static Field toEntity(FieldRequestDTO dto, Venue venue) {
+        Field field = new Field();
+
+        field.setVenue(venue);
+        field.setName(dto.getName());
+        field.setFieldType(dto.getFieldType());
+        field.setSurface(dto.getSurface());
+        field.setCapacityPlayers(dto.getCapacityPlayers());
+        field.setPricePerHour(dto.getPricePerHour());
+        field.setSlotMinutes(dto.getSlotMinutes());
+        field.setOpenHour(dto.getOpenHour());
+        field.setCloseHour(dto.getCloseHour());
+        field.setMinBookingHours(dto.getMinBookingHours());
+        field.setActive(true);
+
+        return field;
     }
 
     // ------------------ Fin helpers ------------------

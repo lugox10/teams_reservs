@@ -1,11 +1,9 @@
 package com.lugo.teams.reservs.application.mapper;
+
 import com.lugo.teams.reservs.application.dto.reserv.ReservationRequestDTO;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
 import com.lugo.teams.reservs.application.dto.reserv.ReservationTeamLinkDTO;
-import com.lugo.teams.reservs.domain.model.Reservation;
-import com.lugo.teams.reservs.domain.model.ReservationTeamLink;
-import com.lugo.teams.reservs.domain.model.TimeSlot;
-import com.lugo.teams.reservs.domain.model.Field;
+import com.lugo.teams.reservs.domain.model.*;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -17,55 +15,53 @@ import java.util.stream.Collectors;
 public class ReservationMapper {
 
     /**
-     * Crea entidad Reservation a partir del request. No calcula totalAmount ni gestiona pagos/links:
-     * eso lo hace el servicio.
+     * Crea entidad Reservation a partir del request.
+     * No calcula totalAmount ni gestiona pagos/links: eso lo hace el servicio.
      */
-    public Reservation toEntity(ReservationRequestDTO dto, Field field, TimeSlot timeSlot) {
+    public Reservation toEntity(ReservationRequestDTO dto, Field field) {
         if (dto == null) return null;
+
         Reservation r = new Reservation();
         r.setId(null);
         r.setUserName(dto.getUserName());
         r.setUserId(dto.getUserId());
-        r.setVenueId(dto.getVenueId() != null ? dto.getVenueId()
-                : (field != null && field.getVenue() != null ? field.getVenue().getId() : null));
+
         r.setField(field);
-        r.setTimeSlot(timeSlot);
+        r.setVenue(field.getVenue()); // 🔥 correcto
 
-        // start/end: prefer los valores del dto; si no vienen, usar timeSlot si existe
-        r.setStartDateTime(dto.getStartDateTime() != null ? dto.getStartDateTime()
-                : (timeSlot != null ? timeSlot.getStartDateTime() : null));
-        r.setEndDateTime(dto.getEndDateTime() != null ? dto.getEndDateTime()
-                : (timeSlot != null ? timeSlot.getEndDateTime() : null));
+        r.setStartDateTime(dto.getStartDateTime());
+        r.setEndDateTime(dto.getEndDateTime());
 
-        // durationMinutes puede venir: se guarda como ayuda en formulario, pero la entidad mantiene start/end.
         r.setDurationMinutes(dto.getDurationMinutes());
         r.setPlayersCount(dto.getPlayersCount() != null ? dto.getPlayersCount() : 1);
         r.setTeamName(dto.getTeamName());
-        r.setStatus(r.getStatus() == null ? com.lugo.teams.reservs.domain.model.ReservationStatus.PENDING : r.getStatus());
-        r.setPaymentStatus(com.lugo.teams.reservs.domain.model.PaymentStatus.NOT_INITIATED);
-        r.setTotalAmount(null); // calcular en servicio
-        r.setPaymentReference(null);
+
+        r.setStatus(ReservationStatus.PENDING);
+        r.setPaymentStatus(PaymentStatus.NOT_INITIATED);
+
         r.setNotes(dto.getNotes());
-        // guest fields
+
         r.setGuestName(dto.getGuestName());
         r.setGuestPhone(dto.getGuestPhone());
         r.setGuestEmail(dto.getGuestEmail());
+
         return r;
     }
 
+    /**
+     * Convierte entidad a DTO para respuesta.
+     */
     public ReservationResponseDTO toDTO(Reservation entity) {
         if (entity == null) return null;
+
         ReservationResponseDTO.ReservationResponseDTOBuilder b = ReservationResponseDTO.builder()
                 .id(entity.getId())
                 .userName(entity.getUserName())
                 .userId(entity.getUserId())
                 .fieldId(entity.getField() != null ? entity.getField().getId() : null)
                 .fieldName(entity.getField() != null ? entity.getField().getName() : null)
-                .venueId(entity.getVenueId() != null ? entity.getVenueId()
-                        : (entity.getField() != null && entity.getField().getVenue() != null ? entity.getField().getVenue().getId() : null))
-                .venueName(entity.getVenueId() == null && entity.getField() != null && entity.getField().getVenue() != null
-                        ? entity.getField().getVenue().getName() : null)
-                .timeSlotId(entity.getTimeSlot() != null ? entity.getTimeSlot().getId() : null)
+                .venueId(entity.getVenue() != null ? entity.getVenue().getId() : null)
+                .venueName(entity.getVenue() != null ? entity.getVenue().getName() : null)
                 .startDateTime(entity.getStartDateTime())
                 .endDateTime(entity.getEndDateTime())
                 .playersCount(entity.getPlayersCount())
@@ -83,19 +79,26 @@ public class ReservationMapper {
             long mins = Duration.between(entity.getStartDateTime(), entity.getEndDateTime()).toMinutes();
             b.durationMinutes((int) mins);
         } else {
-            b.durationMinutes(entity.getDurationMinutes()); // fallback al valor guardado (si existe)
+            b.durationMinutes(entity.getDurationMinutes()); // fallback
         }
 
-        // map links
+        // mapear links
         b.links(mapLinks(entity.getTeamLinks()));
+
         return b.build();
     }
 
+    /**
+     * Lista de entidades a lista de DTOs
+     */
     public List<ReservationResponseDTO> toDTOList(List<Reservation> list) {
         if (list == null) return Collections.emptyList();
         return list.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Mapea link de equipo a DTO
+     */
     public ReservationTeamLinkDTO toLinkDTO(ReservationTeamLink link) {
         if (link == null) return null;
         return ReservationTeamLinkDTO.builder()
@@ -112,22 +115,29 @@ public class ReservationMapper {
         return links.stream().map(this::toLinkDTO).collect(Collectors.toList());
     }
 
-    /** Actualiza entidad existente con algunos campos de request (no sobreescribe ids ni auditing) */
-    public void updateEntityFromRequest(Reservation entity, ReservationRequestDTO dto, Field field, TimeSlot timeSlot) {
+    /**
+     * Actualiza entidad existente con campos del request (sin tocar IDs ni auditing)
+     */
+    public void updateEntityFromRequest(Reservation entity, ReservationRequestDTO dto, Field field) {
         if (entity == null || dto == null) return;
-        if (dto.getFieldId() != null && field != null) entity.setField(field);
-        if (dto.getTimeSlotId() != null && timeSlot != null) entity.setTimeSlot(timeSlot);
+
+        if (dto.getFieldId() != null && field != null) {
+            entity.setField(field);
+            entity.setVenue(field.getVenue()); // coherencia total
+        }
+
         if (dto.getStartDateTime() != null) entity.setStartDateTime(dto.getStartDateTime());
         if (dto.getEndDateTime() != null) entity.setEndDateTime(dto.getEndDateTime());
         if (dto.getPlayersCount() != null) entity.setPlayersCount(dto.getPlayersCount());
         if (dto.getTeamName() != null) entity.setTeamName(dto.getTeamName());
         if (dto.getNotes() != null) entity.setNotes(dto.getNotes());
         if (dto.getDurationMinutes() != null) entity.setDurationMinutes(dto.getDurationMinutes());
-        if (dto.getVenueId() != null) entity.setVenueId(dto.getVenueId());
+
         // guest fields
         if (dto.getGuestName() != null) entity.setGuestName(dto.getGuestName());
         if (dto.getGuestPhone() != null) entity.setGuestPhone(dto.getGuestPhone());
         if (dto.getGuestEmail() != null) entity.setGuestEmail(dto.getGuestEmail());
-        // NOTA: no guardamos totalAmount / paymentStatus aquí (gestión en servicios de pagos)
+
+        // NOTA: totalAmount / paymentStatus se gestionan en servicios de pago
     }
 }

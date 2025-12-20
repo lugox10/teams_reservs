@@ -23,7 +23,7 @@ public interface DataFieldRepository extends JpaRepository<Field, Long> {
      * Trae Field con relaciones necesarias (venue, photos, timeSlots) para mapear a FieldDetailDTO
      * en el service sin LazyInitializationException.
      */
-    @EntityGraph(attributePaths = {"venue", "photos", "timeSlots"})
+    @EntityGraph(attributePaths = {"venue", "photos"})
     Optional<Field> findWithDetailsById(Long id);
 
     Optional<FieldDetailDTO> findDetailById(Long id);

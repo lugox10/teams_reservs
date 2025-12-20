@@ -10,6 +10,7 @@ import com.lugo.teams.reservs.domain.model.Venue;
 import com.lugo.teams.reservs.domain.repository.FieldRepository;
 import com.lugo.teams.reservs.domain.repository.VenueRepository;
 import com.lugo.teams.reservs.application.service.FieldService;
+import com.lugo.teams.reservs.application.service.ReservationService;
 import com.lugo.teams.reservs.shared.exception.BadRequestException;
 import com.lugo.teams.reservs.shared.exception.NotFoundException;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,30 +36,30 @@ public class FieldServiceImpl implements FieldService {
     private final VenueRepository venueRepository;
     private final FieldMapper mapper;
     private final MeterRegistry meterRegistry;
+    private final ReservationService reservationService;
 
-    // CREATE
     @Override
     @Transactional
-    public FieldDTO createField(FieldRequestDTO dto) {
-        if (dto == null) throw new BadRequestException("FieldDTO es requerido");
+    public FieldDTO createField(Long venueId, FieldRequestDTO dto) {
+        if (dto == null) throw new BadRequestException("FieldRequestDTO es requerido");
         if (dto.getVenueId() == null) throw new BadRequestException("venueId es requerido");
+        if (!dto.getVenueId().equals(venueId))
+            throw new BadRequestException("venueId no coincide con la ruta");
         if (dto.getName() == null || dto.getName().trim().isEmpty())
             throw new BadRequestException("name es requerido");
 
         Venue venue = venueRepository.findById(dto.getVenueId())
                 .orElseThrow(() -> new NotFoundException("Venue no encontrado: " + dto.getVenueId()));
 
-        // si quisieras validar unicidad: existsByVenueIdAndName(...)
+        Field field = FieldMapper.toEntity(dto, venue);
+        Field saved = fieldRepository.save(field);
 
-
-        Field entity = new Field();
-        Field saved = fieldRepository.save(entity);
         meterRegistry.counter("field.created").increment();
         log.info("Field creado id={} venueId={} name={}", saved.getId(), venue.getId(), saved.getName());
+
         return mapper.toDTO(saved);
     }
 
-    // UPDATE
     @Override
     @Transactional
     public FieldDTO updateField(Long id, FieldDTO dto) {
@@ -102,21 +103,13 @@ public class FieldServiceImpl implements FieldService {
 
     @Override
     public List<FieldDetailDTO> findByVenueId(Long venueId) {
-        if (venueId == null) {
-            throw new BadRequestException("venueId es requerido");
-        }
+        if (venueId == null) throw new BadRequestException("venueId es requerido");
 
         List<Field> fields = fieldRepository.findByVenueId(venueId);
+        if (fields == null || fields.isEmpty()) return List.of();
 
-        if (fields == null || fields.isEmpty()) {
-            return List.of();
-        }
-
-        return fields.stream()
-                .map(mapper::toDetailDTO)
-                .collect(Collectors.toList());
+        return fields.stream().map(mapper::toDetailDTO).collect(Collectors.toList());
     }
-
 
     @Override
     public List<FieldDTO> findActiveFields() {
@@ -124,24 +117,31 @@ public class FieldServiceImpl implements FieldService {
         return list == null ? List.of() : list.stream().map(mapper::toDTO).collect(Collectors.toList());
     }
 
-@Override
-@Transactional(readOnly = true)
-public Optional<FieldDetailDTO> findDetailById(Long id) {
-    if (id == null) throw new BadRequestException("id es requerido");
-    return fieldRepository.findWithDetailsById(id).map(mapper::toDetailDTO);
-}
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<FieldDetailDTO> findDetailById(Long id) {
+        if (id == null) throw new BadRequestException("id es requerido");
+        return fieldRepository.findWithDetailsById(id).map(mapper::toDetailDTO);
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<LocalTime> getBookedHoursForDate(Long fieldId, LocalDate date) {
-
         Field field = fieldRepository.findById(fieldId)
                 .orElseThrow(() -> new NotFoundException("Field no encontrado: " + fieldId));
 
-        return fieldRepository.findBookedStartTimesForDate(field, date);
+        return reservationService.findByField(fieldId).stream()
+                .filter(r -> r.getStartDateTime().toLocalDate().equals(date))
+                .flatMap(r -> {
+                    int start = r.getStartDateTime().getHour();
+                    int end = r.getEndDateTime().getHour();
+                    return java.util.stream.IntStream.range(start, end)
+                            .mapToObj(h -> LocalTime.of(h, 0));
+                })
+                .distinct()
+                .sorted()
+                .toList();
     }
-
-
 
     @Override
     public List<FieldSummaryDTO> findSummariesByVenueId(Long id) {
@@ -149,6 +149,4 @@ public Optional<FieldDetailDTO> findDetailById(Long id) {
         var list = fieldRepository.findByVenueId(id);
         return list == null ? List.of() : list.stream().map(mapper::toSummary).collect(Collectors.toList());
     }
-
-
 }

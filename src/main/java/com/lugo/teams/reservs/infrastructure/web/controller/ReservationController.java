@@ -38,7 +38,7 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final FieldService fieldService;
-    private final TimeSlotService timeSlotService;
+
     private final VenueService venueService;
     private final PaymentService paymentService;
     private final ReservUserService userService; // <-- nuevo
@@ -89,7 +89,7 @@ public class ReservationController {
         if (br.hasErrors()) {
             model.addAttribute("venues", venueService.findActive());
             if (dto.getVenueId() != null) model.addAttribute("fields", fieldService.findByVenueId(dto.getVenueId()));
-            if (dto.getFieldId() != null) model.addAttribute("timeSlots", timeSlotService.findByFieldId(dto.getFieldId()));
+
             return "reservations/form";
         }
 
@@ -108,7 +108,8 @@ public class ReservationController {
         try {
             var created = reservationService.createReservation(dto);
             ra.addFlashAttribute("success", "Reserva creada correctamente (id=" + created.getId() + ")");
-            return "redirect:/reservations";
+            return "redirect:/dashboard/user";
+
         } catch (BadRequestException | NotFoundException | ConflictException ex) {
             log.warn("Error creando reserva: {}", ex.getMessage());
             ra.addFlashAttribute("error", ex.getMessage());
@@ -150,12 +151,12 @@ public class ReservationController {
         req.setTeamName(resp.getTeamName());
         req.setNotes(resp.getNotes());
         req.setUserName(resp.getUserName());
-        req.setTimeSlotId(resp.getTimeSlotId());
+
 
         model.addAttribute("reservation", req);
         model.addAttribute("venues", venueService.findActive());
         if (resp.getVenueId() != null) model.addAttribute("fields", fieldService.findByVenueId(resp.getVenueId()));
-        if (resp.getFieldId() != null) model.addAttribute("timeSlots", timeSlotService.findByFieldId(resp.getFieldId()));
+
         model.addAttribute("editingId", id);
         return "reservations/form";
     }
@@ -195,11 +196,7 @@ public class ReservationController {
         return fieldService.findByVenueId(venueId);
     }
 
-    @GetMapping("/api/timeslots")
-    @ResponseBody
-    public List<TimeSlotDTO> findTimeSlotsByField(@RequestParam Long fieldId) {
-        return timeSlotService.findByFieldId(fieldId);
-    }
+
 
     // UPDATE handler
     @PostMapping("/{id}")
@@ -224,7 +221,7 @@ public class ReservationController {
         if (br.hasErrors()) {
             model.addAttribute("venues", venueService.findActive());
             if (dto.getVenueId() != null) model.addAttribute("fields", fieldService.findByVenueId(dto.getVenueId()));
-            if (dto.getFieldId() != null) model.addAttribute("timeSlots", timeSlotService.findByFieldId(dto.getFieldId()));
+
             model.addAttribute("editingId", id);
             return "reservations/form";
         }

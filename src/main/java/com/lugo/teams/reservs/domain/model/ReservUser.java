@@ -39,7 +39,9 @@ public class ReservUser {
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Column( nullable = false)
     private ReservUserRole role;
+
 
     @Builder.Default
     private boolean enabled = true;
