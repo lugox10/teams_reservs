@@ -27,6 +27,8 @@ public class FieldDetailDTO {
     private Integer openHour;
     private Integer closeHour;
     private Integer minBookingHours;
+    private BigDecimal lat;
+    private BigDecimal lng;
 
     private List<String> photos;
 
@@ -34,5 +36,5 @@ public class FieldDetailDTO {
      * Payment options available for this field (derived from venue flags).
      * Ej: ["ONSITE","BANK","ONLINE"]
      */
-    private java.util.List<String> paymentOptions;
+    private List<String> paymentOptions;
 }

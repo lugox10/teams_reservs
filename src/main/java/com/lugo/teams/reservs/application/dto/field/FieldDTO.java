@@ -23,6 +23,8 @@ public class FieldDTO {
     private BigDecimal pricePerHour;
     private Boolean active;
     private List<String> photos;
+    private BigDecimal lat;
+    private BigDecimal lng;
 
     // Nuevos campos consistentes con la entidad
     private Integer slotMinutes;

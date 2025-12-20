@@ -1,4 +1,3 @@
-<!-- src/main/resources/templates/dashboard/owner/venues.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -13,7 +12,7 @@
     <h1>Mis complejos deportivos</h1>
     <p class="text-muted">Administra tus sedes y sus canchas</p>
 
-    <a th:href="@{/dashboard/owner/venues/new}"
+    <a th:href="@{/dashboard/owner/venues/new(ownerId=${ownerId})}"
        class="btn btn-primary mb-3">
         ➕ Crear nuevo complejo
     </a>
@@ -21,10 +20,11 @@
     <div class="row">
         <div class="col-md-4 mb-3" th:each="venue : ${venues}">
             <div class="card h-100">
-                <img th:if="${venue.logoUrl != null}"
-                     th:src="${venue.logoUrl}"
+
+                <img th:if="${venue.mainPhotoUrl != null}"
+                     th:src="${venue.mainPhotoUrl}"
                      class="card-img-top"
-                     alt="logo"/>
+                     alt="foto del complejo"/>
 
                 <div class="card-body">
                     <h5 class="card-title" th:text="${venue.name}">Nombre</h5>

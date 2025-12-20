@@ -1,4 +1,6 @@
 package com.lugo.teams.reservs.application.dto.field;
+import com.lugo.teams.reservs.domain.model.FieldType;
+import com.lugo.teams.reservs.domain.model.SurfaceType;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,7 +16,10 @@ public class FieldSummaryDTO {
     private Integer capacityPlayers;
     private BigDecimal pricePerHour;
     private String firstPhoto;
-
-    // Información útil para listados rápidos
+    private FieldType fieldType;
+    private SurfaceType surface;
     private Integer slotMinutes;
+
+
+
 }

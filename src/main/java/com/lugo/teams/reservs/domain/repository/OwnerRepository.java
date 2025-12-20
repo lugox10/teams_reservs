@@ -2,6 +2,7 @@ package com.lugo.teams.reservs.domain.repository;
 
 import com.lugo.teams.reservs.domain.model.Owner;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface OwnerRepository {
@@ -18,6 +19,8 @@ public interface OwnerRepository {
 
 
     Optional<Owner> findByBusinessNameOrNameOrEmail(String login, String login1, String login2);
+
+    Collection<Owner> findAll();
 }
 
 

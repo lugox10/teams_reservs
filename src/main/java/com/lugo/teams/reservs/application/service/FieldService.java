@@ -15,7 +15,7 @@ import java.util.Optional;
  */
 public interface FieldService {
 
-    FieldDTO createField(FieldRequestDTO dto);
+    FieldDTO createField(Long venueId, FieldRequestDTO dto);
 
     FieldDTO updateField(Long id, FieldDTO dto);
 

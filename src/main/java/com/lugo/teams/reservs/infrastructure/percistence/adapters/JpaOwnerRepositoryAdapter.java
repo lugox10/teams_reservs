@@ -5,6 +5,8 @@ import com.lugo.teams.reservs.domain.repository.OwnerRepository;
 import com.lugo.teams.reservs.infrastructure.percistence.jpa.DataOwnerRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -46,6 +48,11 @@ public class JpaOwnerRepositoryAdapter implements OwnerRepository {
         return repo.findByBusinessNameIgnoreCaseOrNameIgnoreCaseOrEmailIgnoreCase(name, buessinesName, email);
     }
 
+    @Override
+    public Collection<Owner> findAll() {
+        return repo.findAll();
     }
+
+}
 
 

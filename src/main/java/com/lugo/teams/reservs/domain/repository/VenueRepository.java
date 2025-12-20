@@ -11,4 +11,7 @@ public interface VenueRepository {
     List<Venue> findByOwnerId(Long ownerId);
     List<Venue> findByActiveTrue();
 
+    Venue saveAndFlush(Venue venue);
+
+    int countByOwnerId(Long id);
 }

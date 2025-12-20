@@ -1,6 +1,8 @@
 package com.lugo.teams.reservs.domain.repository;
 
 import com.lugo.teams.reservs.domain.model.ReservUser;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.Optional;
 
@@ -29,4 +31,6 @@ public interface ReservUserRepository {
     boolean existsByUsername(String username);
 
     boolean existsByIdentification(String identification);
+
+    boolean existsByUsernameOrEmail(@NotBlank String username, @Email @NotBlank String email);
 }

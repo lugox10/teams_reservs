@@ -31,7 +31,7 @@ public class Owner extends BaseEntity {
      * Si ya habías añadido password en Owner lo dejamos (opcional).
      * Recomendado: la auth principal la maneja ReservUser; Owner.user referencia al ReservUser.
      */
-    private String password;
+    private String password;//DEPRECADO SEGUN EL CAMBIO DE LOGICA DE AUTENTICACIÓN
 
     /**
      * Vinculo opcional al usuario de autenticación

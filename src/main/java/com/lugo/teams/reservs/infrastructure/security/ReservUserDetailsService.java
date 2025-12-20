@@ -14,25 +14,18 @@ public class ReservUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
-        if (login == null) throw new UsernameNotFoundException("Login vacío");
+        if (login == null || login.isBlank()) {
+            throw new UsernameNotFoundException("Login vacío");
+        }
 
-        String normalized = login.trim();
-        // normalize email to lower-case for consistent lookup
-        String maybeEmail = normalized.contains("@") ? normalized.toLowerCase() : normalized;
+        String value = login.trim();
+        String email = value.contains("@") ? value.toLowerCase() : value;
 
-        ReservUser user = userRepo.findByUsernameOrEmailOrIdentification(normalized, maybeEmail, normalized)
+        ReservUser user = userRepo
+                .findByUsernameOrEmailOrIdentification(value, email, value)
                 .orElseThrow(() -> new UsernameNotFoundException("Credenciales inválidas"));
 
-        // mapear roles a authorities (asume ReservUser.role tenga nombre compatible: e.g. ROLE_USER)
-        String roleName = (user.getRole() != null) ? "ROLE_" + user.getRole().name() : "ROLE_USER";
-
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getUsername()) // no forzamos lower-case aquí: lo que importa es que DB y registro usen el mismo formato
-                .password(user.getPassword())
-                .authorities(roleName) // ej. "ROLE_USER" o "ROLE_OWNER"
-                .accountLocked(false)
-                .disabled(false)
-                .build();
-
+        return new UserDetailsImpl(user); // <-- aquí usamos tu UserDetailsImpl
     }
+
 }

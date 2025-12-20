@@ -20,4 +20,5 @@ public interface DataReservUserRepository extends JpaRepository<ReservUser, Long
     Optional<ReservUser> findByPhone(String phone);
 
 
+    boolean existsByUsernameOrEmail(String username, String email);
 }

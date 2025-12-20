@@ -8,4 +8,6 @@
     public interface DataVenueRepository extends JpaRepository<Venue, Long> {
         List<Venue> findByOwnerId(Long ownerId);
         List<Venue> findByActiveTrue();
+
+        int countByOwnerId(Long id);
     }

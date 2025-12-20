@@ -1,7 +1,10 @@
 package com.lugo.teams.reservs.application.service;
 
 import com.lugo.teams.reservs.application.dto.reserv.ReservationResponseDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
+
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,4 +32,14 @@ public interface OwnerDashboardService {
     Map<String, Object> getOwnerOverviewMetrics(Long ownerId, LocalDate from, LocalDate to);
 
     Long getOwnerIdFromAuth(Authentication auth);
+
+
+    Page<ReservationResponseDTO> findReservationsByOwner(
+            Long ownerId,
+            LocalDate from,
+            LocalDate to,
+                Pageable pageable
+    );
+
+    Map<Long, Map<String, Object>> getMetricsByVenue(Long ownerId, LocalDate from, LocalDate to);
 }
